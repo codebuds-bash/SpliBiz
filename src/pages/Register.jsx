@@ -3,6 +3,7 @@ import { supabase } from "../supabaseClient";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { useToast, Loader } from "../components/UIComponents";
+import { FcGoogle } from "react-icons/fc";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -128,8 +129,8 @@ export default function Register() {
 
           <button
             onClick={loginWithGoogle}
-            className="w-full border border-gray-700 rounded-md py-2 text-sm text-white hover:bg-gray-800"
-          >
+            className="flex items-center justify-center w-full border border-gray-700 rounded-md py-2 text-sm text-white hover:bg-gray-800"
+          > <FcGoogle className="text-xl mr-2" />
             Sign up with Google
           </button>
 

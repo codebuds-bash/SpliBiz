@@ -79,6 +79,12 @@ export default function JoinGroup() {
     if (error) {
       addToast("Failed to join group: " + error.message, "error");
     } else {
+      // 4. (Optional) delete invite - Single use token logic
+      await supabase
+        .from("group_invites")
+        .delete()
+        .eq("invite_token", token);
+
       addToast(`Successfully joined ${group.name}!`, "success");
       navigate(`/group/${group.id}`);
     }
