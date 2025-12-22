@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import { Loader } from "../components/UIComponents";
+
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -43,7 +43,7 @@ export default function AuthCallback() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-[var(--bg-body)]">
-      <Loader size="lg" />
+      <div className="text-white">Verifying...</div>
     </div>
   );
 }

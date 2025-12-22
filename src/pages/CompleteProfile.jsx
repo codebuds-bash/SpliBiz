@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { Loader, useToast } from "../components/UIComponents";
+import { useToast } from "../components/UIComponents";
 
 export default function CompleteProfile() {
   const [loading, setLoading] = useState(true);
@@ -89,7 +89,7 @@ export default function CompleteProfile() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[var(--bg-body)]">
-        <Loader size="lg" />
+        <div className="text-white">Loading...</div>
       </div>
     );
   }
@@ -145,8 +145,7 @@ export default function CompleteProfile() {
             >
               {saving ? (
                 <>
-                  <Loader size="sm" />
-                  Saving...
+                  <span>Saving...</span>
                 </>
               ) : (
                 "Continue"

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { useToast, Loader } from "../components/UIComponents";
+import { useToast } from "../components/UIComponents";
 import { FcGoogle } from "react-icons/fc";
 
 export default function Login() {
@@ -107,10 +107,7 @@ export default function Login() {
               className="w-full btn-primary disabled:opacity-60 disabled:cursor-not-allowed flex justify-center items-center gap-2"
             >
               {loading ? (
-                <>
-                  <Loader size="sm" className="text-black" /> 
-                  <span>Signing in...</span>
-                </>
+                <span>Signing in...</span>
               ) : (
                 "Sign in"
               )}

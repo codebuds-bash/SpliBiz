@@ -1,30 +1,16 @@
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "../supabaseClient";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Icons } from "./UIComponents";
 import NotificationBell from "./NotificationBell";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Navbar() {
-  const [user, setUser] = useState(null);
+  const { user, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   async function logout() {
-    await supabase.auth.signOut();
+    await signOut();
     setMenuOpen(false);
     navigate("/");
   }

@@ -7,32 +7,45 @@ export async function ensureProfile(user, navigate) {
   // Fetch profile
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, name, username")
+    .select("id, name, username, avatar_url")
     .eq("id", user.id)
-    .single();
-    
-if (!profile?.username && navigate) {
-  navigate("/complete-profile", { replace: true });
-  return;
-}
+    .maybeSingle();
 
-  // If profile exists, enrich name if missing
+  // IF PROFILE EXISTS
   if (profile) {
+    // Redirect if incomplete
+    if (!profile.username && navigate) {
+      navigate("/complete-profile", { replace: true });
+      return;
+    }
+
+    // Enrich missing fields (background task)
+    const updates = {};
     if (!profile.name && user.user_metadata?.full_name) {
+      updates.name = user.user_metadata.full_name;
+    }
+    if (!profile.avatar_url && (user.user_metadata?.avatar_url || user.user_metadata?.picture)) {
+      updates.avatar_url = user.user_metadata.avatar_url || user.user_metadata.picture;
+    }
+
+    if (Object.keys(updates).length > 0) {
       await supabase
         .from("profiles")
-        .update({
-          name: user.user_metadata.full_name,
-        })
+        .update(updates)
         .eq("id", user.id);
     }
     return;
   }
 
-  // Create profile if missing (fallback)
-  await supabase.from("profiles").insert({
+  // IF NO PROFILE (create fallback)
+  const { error: insertError } = await supabase.from("profiles").insert({
     id: user.id,
     email: user.email,
     name: user.user_metadata?.full_name || null,
+    avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null
   });
+
+  if (!insertError && navigate) {
+     navigate("/complete-profile", { replace: true });
+  }
 }

@@ -2,7 +2,7 @@ import { supabase } from "../supabaseClient";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { useToast, Loader } from "../components/UIComponents";
+import { useToast } from "../components/UIComponents";
 
 export default function CreateGroup() {
   const [name, setName] = useState("");
@@ -104,10 +104,7 @@ export default function CreateGroup() {
                 className="btn-primary disabled:opacity-70 flex justify-center items-center gap-2"
               >
                 {loading ? (
-                  <>
-                    <Loader size="sm" className="text-black" />
-                    <span>Creating...</span>
-                  </>
+                  <span>Creating...</span>
                 ) : (
                   "Create Group"
                 )}

@@ -2,7 +2,7 @@ import { supabase } from "../supabaseClient";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
-import { useToast, Loader } from "../components/UIComponents";
+import { useToast } from "../components/UIComponents";
 
 export default function JoinGroup() {
   const [params] = useSearchParams();
@@ -107,7 +107,6 @@ export default function JoinGroup() {
       <Navbar />
       <div className="flex items-center justify-center px-4 py-32">
         <div className="flex flex-col items-center">
-            <Loader size="lg" />
             <p className="text-white mt-4 font-medium">Joining group...</p>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import { supabase } from "../supabaseClient";
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
-import { Loader } from "../components/UIComponents";
+
 
 export default function Profile() {
   const [profile, setProfile] = useState(null);
@@ -65,8 +65,8 @@ export default function Profile() {
           </h1>
 
           {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader size="md" />
+            <div className="flex justify-center py-8 text-white">
+              Loading...
             </div>
           ) : error ? (
             <p className="text-red-400">{error}</p>
