@@ -26,14 +26,16 @@ export default function CreateGroup() {
       return;
     }
 
-    // 2️⃣ INSERT group (IMPORTANT: NO .select())
-    const { error: insertError } = await supabase
+    // 2️⃣ Create Group & Select ID immediately
+    const { data: group, error: insertError } = await supabase
       .from("groups")
       .insert({
         name,
         type: "flat",
         created_by: user.id,
-      });
+      })
+      .select("id")
+      .single();
 
     if (insertError) {
       addToast("Error creating group: " + insertError.message, "error");
@@ -41,38 +43,27 @@ export default function CreateGroup() {
       return;
     }
 
-    // 3️⃣ Fetch the newly created group ID safely
-    const { data: group, error: fetchError } = await supabase
-      .from("groups")
-      .select("id")
-      .eq("created_by", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
-
-    if (fetchError || !group) {
-      addToast("Group created, but failed to fetch group ID", "error");
-      setLoading(false);
-      return;
-    }
-
-    // 4️⃣ Add creator as group member
+    // 3️⃣ Add creator as group member (REQUIRED)
     const { error: memberError } = await supabase
       .from("group_members")
       .insert({
         group_id: group.id,
         user_id: user.id,
+        role: "admin"
       });
 
     if (memberError) {
       addToast("Error adding member: " + memberError.message, "error");
       setLoading(false);
-      return;
+      return; // Stop here if member add fails
     }
 
     addToast("Group created successfully!", "success");
+    navigate(`/group/${group.id}`);
+    
     setLoading(false);
-    navigate("/dashboard");
+
+
   }
 
   return (

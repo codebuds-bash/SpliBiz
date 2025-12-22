@@ -9,34 +9,59 @@ export default function ProtectedRoute({ children }) {
   const [session, setSession] = useState(null);
   const navigate = useNavigate();
 
+  const joinToken = localStorage.getItem("join_token");
+
   useEffect(() => {
-    // 1️⃣ Get initial session (important for Google OAuth)
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session);
+    let mounted = true;
 
-      if (data.session?.user) {
-        await ensureProfile(data.session.user, navigate);
-      }
-
-      setLoading(false);
-    });
-
-    // 2️⃣ Listen for auth changes (login/logout)
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-
-        if (session?.user) {
-          await ensureProfile(session.user, navigate);
+    async function checkAuth() {
+      try {
+        // 1️⃣ Get session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (mounted) {
+          setSession(session);
         }
 
-        setLoading(false);
-      }
-    );
+        // 2️⃣ Handle Join Token Redirect (ONLY if authenticated)
+        // If we redirect, we don't strictly need to unset loading, as unmount happens.
+        // But for safety, we process this.
+        if (session?.user && joinToken) {
+          navigate(`/join?token=${joinToken}`, { replace: true });
+          return;
+        }
 
-    return () => subscription.unsubscribe();
+        // 3️⃣ Profile Check
+        if (session?.user) {
+           await ensureProfile(session.user, navigate);
+        }
+
+      } catch (error) {
+        console.error("Auth check failed:", error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    }
+    
+    checkAuth();
+
+    // 4️⃣ Listener for future changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (!mounted) return;
+        setSession(session);
+        // Only trigger profile check if we have a session
+        if (session?.user) {
+            await ensureProfile(session.user, navigate);
+        }
+        setLoading(false);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   // 3️⃣ While auth is resolving

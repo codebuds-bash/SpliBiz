@@ -10,7 +10,7 @@ import JoinGroup from "./pages/JoinGroup";
 import Profile from "./pages/Profile";
 import CompleteProfile from "./pages/CompleteProfile";
 import ProtectedRoute from "./components/ProtectedRoute";
-
+import AuthCallback from "./pages/AuthCallback";
 
 export default function App() {
   return (
@@ -20,6 +20,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/join" element={<JoinGroup />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
 
       {/* Protected routes */}
       <Route

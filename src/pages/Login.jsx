@@ -29,8 +29,17 @@ export default function Login() {
       addToast(error.message, "error");
     } else {
       addToast("Signed in successfully", "success");
-      const redirectTo = location.state?.from || "/dashboard";
-      navigate(redirectTo, { replace: true });
+      
+      // Check for pending join
+      const joinToken = localStorage.getItem("join_token");
+      if (joinToken) {
+        // Clear token and redirect to join page
+        localStorage.removeItem("join_token");
+        navigate(`/join?token=${joinToken}`, { replace: true });
+      } else {
+        const redirectTo = location.state?.from || "/dashboard";
+        navigate(redirectTo, { replace: true });
+      }
     }
   }
 
@@ -39,7 +48,7 @@ export default function Login() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${window.location.origin}/dashboard`,
+      redirectTo: `${window.location.origin}/auth/callback`,
     },
   });
 
