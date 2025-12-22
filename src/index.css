@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'HelveticaCustom';
+  src: url('./assets/fonts/Helvetica.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'HelveticaCustom';
+  src: url('./assets/fonts/Helvetica-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'HelveticaCustom';
+  src: url('./assets/fonts/helvetica-light-587ebe5a59211.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+}
+
+:root {
+  /* Supabase inspired palette */
+  --bg-body: #1c1c1c;
+  --bg-surface: #232323;
+  --border-color: #2e2e2e;
+  --primary-green: #3ecf8e;
+  --primary-green-hover: #34b27b;
+  --text-main: #ededed;
+  --text-muted: #888888;
+  
+  --app-font: 'HelveticaCustom', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  font-family: var(--app-font);
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Utilities for reused styles */
+@layer components {
+  .btn-primary {
+    @apply bg-[var(--primary-green)] text-[#151515] font-medium px-4 py-2 rounded transition-colors hover:bg-[var(--primary-green-hover)];
+  }
+  .btn-secondary {
+    @apply bg-[#2a2a2a] text-white font-medium px-4 py-2 rounded border border-[var(--border-color)] transition-colors hover:border-gray-500 hover:bg-[#333];
+  }
+  .input-field {
+    @apply w-full bg-[#1c1c1c] border border-[var(--border-color)] rounded px-4 py-2 text-white focus:outline-none focus:border-[var(--primary-green)] transition-colors;
+  }
+  .card {
+    @apply bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-lg p-6;
+  }
+}
