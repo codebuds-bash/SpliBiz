@@ -10,61 +10,50 @@ export default function CreateGroup() {
   const navigate = useNavigate();
   const { addToast } = useToast();
 
-  async function createGroup(e) {
-    e.preventDefault();
-    setLoading(true);
+async function createGroup(e) {
+  e.preventDefault();
+  setLoading(true);
 
-    // 1️⃣ Get logged-in user
+  try {
     const {
       data: { user },
-      error: userError,
     } = await supabase.auth.getUser();
 
-    if (userError || !user) {
-      addToast("User not authenticated", "error");
-      setLoading(false);
-      return;
-    }
+    if (!user) throw new Error("Not authenticated");
 
-    // 2️⃣ Create Group & Select ID immediately
-    const { data: group, error: insertError } = await supabase
+    // INSERT + SELECT is now SAFE
+    const { data: group, error } = await supabase
       .from("groups")
       .insert({
-        name,
+        name: name.trim(),
         type: "flat",
         created_by: user.id,
       })
       .select("id")
       .single();
 
-    if (insertError) {
-      addToast("Error creating group: " + insertError.message, "error");
-      setLoading(false);
-      return;
-    }
+    if (error) throw error;
 
-    // 3️⃣ Add creator as group member (REQUIRED)
+    // Add creator as admin
     const { error: memberError } = await supabase
       .from("group_members")
       .insert({
         group_id: group.id,
         user_id: user.id,
-        role: "admin"
+        role: "admin",
       });
 
-    if (memberError) {
-      addToast("Error adding member: " + memberError.message, "error");
-      setLoading(false);
-      return; // Stop here if member add fails
-    }
+    if (memberError) throw memberError;
 
     addToast("Group created successfully!", "success");
     navigate(`/group/${group.id}`);
-    
+  } catch (err) {
+    console.error(err);
+    addToast(err.message || "Failed to create group", "error");
+  } finally {
     setLoading(false);
-
-
   }
+}
 
   return (
     <div className="min-h-screen bg-[var(--bg-body)]">
@@ -98,16 +87,13 @@ export default function CreateGroup() {
               >
                 Cancel
               </button>
+
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-primary disabled:opacity-70 flex justify-center items-center gap-2"
+                className="btn-primary disabled:opacity-70"
               >
-                {loading ? (
-                  <span>Creating...</span>
-                ) : (
-                  "Create Group"
-                )}
+                {loading ? "Creating..." : "Create Group"}
               </button>
             </div>
           </form>

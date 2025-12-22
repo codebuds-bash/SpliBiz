@@ -3,7 +3,11 @@ import { supabase } from "../supabaseClient";
 import { useEffect, useState } from "react";
 import QRCode from "react-qr-code";
 import Navbar from "../components/Navbar";
-import { useToast, Icons } from "../components/UIComponents";
+import AddExpense from "../components/AddExpense";
+import ExpenseList from "../components/ExpenseList";
+import GroupBalances from "../components/GroupBalances";
+import SettleUpModal from "../components/SettleUpModal";
+import { useToast, Icons, Modal } from "../components/UIComponents";
 
 export default function GroupDetails() {
   const { id } = useParams();
@@ -13,6 +17,12 @@ export default function GroupDetails() {
   const [members, setMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [currentUserId, setCurrentUserId] = useState(null);
+  
+  // Modals
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [isSettleModalOpen, setIsSettleModalOpen] = useState(false);
+  const [expenseToEdit, setExpenseToEdit] = useState(null);
+  const [refreshExpensesTrigger, setRefreshExpensesTrigger] = useState(0);
 
   const [username, setUsername] = useState("");
   const [inviteToken, setInviteToken] = useState(null);
@@ -152,160 +162,223 @@ export default function GroupDetails() {
       );
     }
 
+
     return (
       <div className="w-10 h-10 rounded-full bg-green-500/20 
                       text-green-500 flex items-center justify-center font-bold uppercase text-sm">
-        {member.username.slice(0, 2)}
+        {(member.username || "?").slice(0, 2)}
       </div>
     );
   };
+  
+  // Handlers
+  const handleEditExpense = (expense) => {
+      setExpenseToEdit(expense);
+      setIsExpenseModalOpen(true);
+  };
+
+  const closeModal = () => {
+      setIsExpenseModalOpen(false);
+      setExpenseToEdit(null);
+  }
 
   return (
     <div className="min-h-screen bg-[var(--bg-body)]">
       <Navbar />
 
-      <div className="max-w-5xl mx-auto px-6 py-12">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 md:py-12">
+        {/* HEADER */}
         <Link to="/dashboard" className="text-sm text-[var(--text-muted)] hover:text-white mb-3 block">
           ← Back to Dashboard
         </Link>
 
-        <h1 className="text-3xl font-bold text-white mb-6">
-          {group?.name || "Loading..."}
-        </h1>
-
-        {/* MEMBERS */}
-        <div className="mb-10">
-          <h3 className="text-lg font-semibold text-white mb-4">
-            Members ({members.length})
-          </h3>
-
-          <div className="flex flex-wrap gap-4">
-            {members.map(member => (
-              <div
-                key={member.user_id}
-                className="flex items-center gap-3 bg-white/5 border border-[var(--border-color)] px-3 py-2 rounded-lg"
-              >
-                {getAvatar(member)}
-
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-white">
-                    {member.name || "Unnamed"}
-                  </p>
-                  <p className="text-xs text-[var(--text-muted)]">
-                    @{member.username}
-                  </p>
-                </div>
-
-                {/* ROLE TAG */}
-                <span
-                  className={`ml-2 text-xs px-2 py-0.5 rounded-full font-medium
-                    ${member.role === "admin"
-                      ? "bg-yellow-500/20 text-yellow-400"
-                      : "bg-blue-500/20 text-blue-400"
-                    }`}
-                >
-                  {member.role}
-                </span>
-
-                {/* REMOVE BUTTON (ADMIN ONLY) */}
-                {isAdmin && member.user_id !== currentUserId && (
-                  <button
-                    onClick={() => removeMember(member.user_id)}
-                    className="ml-2 text-xs text-red-400 hover:text-red-300"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <h1 className="text-3xl font-bold text-white">
+              {group?.name || "Loading..."}
+            </h1>
+            <div className="flex gap-3">
+                 <button 
+                   onClick={() => setIsSettleModalOpen(true)}
+                   className="btn-secondary flex items-center gap-2"
+                 >
+                    Settle Up
+                 </button>
+                 <button 
+                   onClick={() => setIsExpenseModalOpen(true)}
+                   className="btn-primary flex items-center gap-2"
+                 >
+                    <Icons.Plus /> Add Expense
+                 </button>
+            </div>
         </div>
 
-        {/* ACTIONS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* ADD MEMBER */}
-          <div className="card">
-            <h3 className="text-xl font-semibold text-white mb-4">
-              Add Member
-            </h3>
-
-            <div className="relative">
-              <div className="flex gap-2">
-                <input
-                  placeholder="Search username..."
-                  value={username}
-                  onChange={(e) => {
-                    setUsername(e.target.value);
-                    if (e.target.value.length > 2) {
-                      searchUsers(e.target.value);
-                    } else {
-                      setSearchResults([]);
-                    }
-                  }}
-                  className="input-field"
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* LEFT COLUMN: EXPENSES */}
+            <div className="lg:col-span-2">
+                <h3 className="text-xl font-semibold text-white mb-4">Expenses</h3>
+                <ExpenseList 
+                    groupId={id} 
+                    refreshTrigger={refreshExpensesTrigger} 
+                    members={members} 
+                    onEdit={handleEditExpense} 
                 />
-                <button onClick={addByUsername} className="btn-primary">
-                  Add
-                </button>
-              </div>
-
-              {searchResults.length > 0 && (
-                <div className="absolute z-10 w-full mt-2 bg-[#1c1c1c] border border-[var(--border-color)] rounded-lg overflow-hidden">
-                  {searchResults.map(user => (
-                    <div
-                      key={user.id}
-                      onClick={() => selectUser(user)}
-                      className="flex items-center gap-3 px-3 py-2 hover:bg-white/5 cursor-pointer"
-                    >
-                      {getAvatar(user)}
-                      <div>
-                        <p className="text-sm text-white">{user.name}</p>
-                        <p className="text-xs text-[var(--text-muted)]">
-                          @{user.username}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
-          </div>
 
-          {/* INVITE */}
-          <div className="card">
-            <h3 className="text-xl font-semibold text-white mb-4">
-              Invite Link
-            </h3>
+            {/* RIGHT COLUMN: SIDEBAR */}
+            <div className="space-y-8">
+                
+                {/* 📊 BALANCES */}
+                <GroupBalances groupId={id} members={members} refreshTrigger={refreshExpensesTrigger} />
 
-            {inviteToken ? (
-              <div className="flex flex-col gap-3">
-                <div className="bg-white p-4 rounded-lg flex justify-center">
-                  <QRCode
-                    value={`${window.location.origin}/join?token=${inviteToken}`}
-                    size={150}
-                  />
+                {/* MEMBERS */}
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-4">
+                    Members ({members.length})
+                  </h3>
+
+                  <div className="flex flex-col gap-2">
+                    {members.map(member => (
+                      <div
+                        key={member.user_id}
+                        className="flex items-center gap-3 bg-white/5 border border-[var(--border-color)] px-3 py-2 rounded-lg"
+                      >
+                        {getAvatar(member)}
+
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-white">
+                            {member.name || "Unnamed"}
+                          </p>
+                          <p className="text-xs text-[var(--text-muted)]">
+                            @{member.username}
+                          </p>
+                        </div>
+
+                         {/* REMOVE BUTTON (ADMIN ONLY) */}
+                         {isAdmin && member.user_id !== currentUserId && (
+                          <button
+                            onClick={() => removeMember(member.user_id)}
+                            className="ml-2 text-xs text-red-400 hover:text-red-300"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                <button
-                  className="btn-secondary w-full"
-                  onClick={() => {
-                    navigator.clipboard.writeText(
-                      `${window.location.origin}/join?token=${inviteToken}`
-                    );
-                    addToast("Link copied", "success");
-                  }}
-                >
-                  Copy Invite Link
-                </button>
-              </div>
-            ) : (
-              <button onClick={generateInvite} className="btn-primary w-full">
-                Generate Invite Link
-              </button>
-            )}
-          </div>
+                {/* ADD MEMBER */}
+                <div className="card">
+                    <h3 className="text-sm font-semibold text-white mb-3 uppercase tracking-wider">
+                      Add Members
+                    </h3>
+
+                    <div className="relative">
+                      <div className="flex gap-2 mb-2">
+                        <input
+                          placeholder="Username..."
+                          value={username}
+                          onChange={(e) => {
+                            setUsername(e.target.value);
+                            if (e.target.value.length > 2) {
+                              searchUsers(e.target.value);
+                            } else {
+                              setSearchResults([]);
+                            }
+                          }}
+                          className="input-field py-1 text-sm"
+                        />
+                        <button onClick={addByUsername} className="btn-secondary py-1 text-sm">
+                          Add
+                        </button>
+                      </div>
+
+                      {searchResults.length > 0 && (
+                        <div className="absolute z-10 w-full mt-2 bg-[#1c1c1c] border border-[var(--border-color)] rounded-lg overflow-hidden shadow-xl">
+                          {searchResults.map(user => (
+                            <div
+                              key={user.id}
+                              onClick={() => selectUser(user)}
+                              className="flex items-center gap-3 px-3 py-2 hover:bg-white/5 cursor-pointer"
+                            >
+                              {getAvatar(user)}
+                              <div>
+                                <p className="text-sm text-white">{user.name}</p>
+                                <p className="text-xs text-[var(--text-muted)]">
+                                  @{user.username}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <button 
+                        onClick={() => setIsExpenseModalOpen(false)} // Just to toggle something if needed, invite logic is below
+                        className="text-[var(--primary-green)] text-sm hover:underline mt-2 hidden"
+                    >
+                         Invite via Link
+                    </button>
+
+                    {inviteToken ? (
+                        <div className="mt-4">
+                            <input 
+                                readOnly
+                                value={`${window.location.origin}/join?token=${inviteToken}`}
+                                className="input-field text-xs mb-2"
+                            />
+                            <button
+                                className="w-full btn-secondary text-xs py-1"
+                                onClick={() => {
+                                    navigator.clipboard.writeText(`${window.location.origin}/join?token=${inviteToken}`);
+                                    addToast("Link copied", "success");
+                                }}
+                            >
+                                Copy Link
+                            </button>
+                        </div>
+                    ) : (
+                        <button onClick={generateInvite} className="w-full btn-secondary text-xs py-1 mt-2">
+                            Generate Invite Link
+                        </button>
+                    )}
+                </div>
+            </div>
         </div>
       </div>
+
+      {/* ADD / EDIT EXPENSE MODAL */}
+      <Modal 
+         isOpen={isExpenseModalOpen} 
+         onClose={closeModal} 
+         title={expenseToEdit ? "Edit Expense" : "Add New Expense"}
+      >
+        <AddExpense 
+            groupId={id} 
+            members={members}
+            initialData={expenseToEdit} 
+            onAdded={() => {
+                closeModal();
+                setRefreshExpensesTrigger(prev => prev + 1);
+            }} 
+        />
+      </Modal>
+
+      {/* SETTLE UP MODAL */}
+      <Modal
+        isOpen={isSettleModalOpen}
+        onClose={() => setIsSettleModalOpen(false)}
+        title="Settle Up"
+      >
+        <SettleUpModal 
+             groupId={id}
+             members={members}
+             onClose={() => setIsSettleModalOpen(false)}
+             onSuccess={() => setRefreshExpensesTrigger(prev => prev + 1)}
+        />
+      </Modal>
+
     </div>
   );
 }
