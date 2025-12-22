@@ -16,8 +16,12 @@ supabase.auth.onAuthStateChange((event) => {
   }
 });
 
+import { ToastProvider } from "./components/UIComponents";
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>
-    <App />
+    <ToastProvider>
+      <App />
+    </ToastProvider>
   </BrowserRouter>
 );
