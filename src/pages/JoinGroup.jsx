@@ -85,6 +85,24 @@ export default function JoinGroup() {
         .delete()
         .eq("invite_token", token);
 
+      // 5. Notify Group Admin (Owner)
+      // First get the owner of the group
+      const { data: groupData } = await supabase
+        .from("groups")
+        .select("created_by")
+        .eq("id", group.id)
+        .single();
+        
+      if (groupData?.created_by) {
+        await supabase.from("notifications").insert({
+          user_id: groupData.created_by,
+          actor_id: user.id,
+          group_id: group.id,
+          type: "invite_used",
+          message: `${user.email} joined ${group.name} via invite link`,
+        });
+      }
+
       addToast(`Successfully joined ${group.name}!`, "success");
       navigate(`/group/${group.id}`);
     }

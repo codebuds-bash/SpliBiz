@@ -1,6 +1,6 @@
 import { supabase } from "../supabaseClient";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { useToast, Modal, Icons, Loader } from "../components/UIComponents";
 
@@ -11,8 +11,25 @@ export default function Dashboard() {
   // Modal State
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [newName, setNewName] = useState("");
+  const [inviteLink, setInviteLink] = useState("");
+  const navigate = useNavigate();
+  
+  const handleJoinSubmit = (e) => {
+    e.preventDefault();
+    if (!inviteLink.trim()) return;
+    
+    // Extract token if full URL is pasted
+    let token = inviteLink.trim();
+    if (token.includes("token=")) {
+      token = token.split("token=")[1];
+    }
+    
+    // Redirect to the centralized Join logic
+    navigate(`/join?token=${token}`);
+  };
   
   const { addToast } = useToast();
 
@@ -96,9 +113,17 @@ export default function Dashboard() {
       <div className="max-w-5xl mx-auto px-6 py-12">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-white">Your Groups</h1>
-          <Link to="/create-group" className="btn-primary">
-            New Group
-          </Link>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setIsJoinModalOpen(true)}
+              className="btn-secondary"
+            >
+              Join Group
+            </button>
+            <Link to="/create-group" className="btn-primary">
+              New Group
+            </Link>
+          </div>
         </div>
 
         {loading ? (
@@ -194,6 +219,36 @@ export default function Dashboard() {
             Delete Group
           </button>
         </div>
+      </Modal>
+
+      {/* Join Group Modal */}
+      <Modal isOpen={isJoinModalOpen} onClose={() => setIsJoinModalOpen(false)} title="Join a Group">
+        <form onSubmit={handleJoinSubmit}>
+          <div className="mb-6">
+            <p className="text-[var(--text-muted)] text-sm mb-4">
+              Enter the invitation link or token shared with you to join an existing group.
+            </p>
+            <label className="block text-xs font-medium text-[var(--text-muted)] mb-2 uppercase tracking-wider">
+              Invitation Link / Token
+            </label>
+            <input
+              value={inviteLink}
+              onChange={e => setInviteLink(e.target.value)}
+              className="input-field"
+              placeholder="e.g. https://splibiz.app/join?token=..."
+              autoFocus
+              required
+            />
+          </div>
+          <div className="flex justify-end gap-3">
+            <button type="button" onClick={() => setIsJoinModalOpen(false)} className="btn-secondary">
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary">
+              Continue
+            </button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

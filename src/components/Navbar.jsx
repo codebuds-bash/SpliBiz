@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import { useEffect, useState } from "react";
 import { Icons } from "./UIComponents";
+import NotificationBell from "./NotificationBell";
 
 export default function Navbar() {
   const [user, setUser] = useState(null);
@@ -77,6 +78,7 @@ export default function Navbar() {
             </>
           ) : (
             <>
+              <NotificationBell />
               <Link to="/dashboard" className="text-[var(--text-muted)] hover:text-white transition-colors">
                 Dashboard
               </Link>
