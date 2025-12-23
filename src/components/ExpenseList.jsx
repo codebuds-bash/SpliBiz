@@ -120,8 +120,8 @@ export default function ExpenseList({ groupId, refreshTrigger, members, onEdit }
                  </span>
               </div>
               
-               {/* CREATOR AVATAR (Mobile: Hidden, Desktop: Visible) */}
-               <div className="hidden sm:block shrink-0">
+               {/* CREATOR AVATAR */}
+               <div className="shrink-0">
                     {getAvatar(expense.created_by)}
                </div>
 

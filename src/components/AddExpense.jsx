@@ -96,6 +96,31 @@ export default function AddExpense({ groupId, members, onAdded, initialData = nu
       );
       if (splitError) throw splitError;
 
+      if (splitError) throw splitError;
+      
+      // 5️⃣ Send Notifications to all group members (except current user)
+      // We need to fetch group members first if not fully reliable from props, but 'members' prop should do.
+      if (members && members.length > 0) {
+        const titleShort = title.length > 20 ? title.substring(0, 20) + "..." : title;
+        const msg = initialData 
+            ? `Updated expense: ${titleShort}`
+            : `Added expense: ${titleShort}`;
+            
+        const notifications = members
+            .filter(m => m.user_id !== user.id)
+            .map(m => ({
+                user_id: m.user_id,
+                group_id: groupId,
+                type: 'expense',
+                message: msg,
+                actor_id: user.id
+            }));
+            
+        if (notifications.length > 0) {
+            await supabase.from("notifications").insert(notifications);
+        }
+      }
+
       addToast(initialData ? "Expense updated" : "Expense added", "success");
       onAdded?.();
       
