@@ -1,50 +1,10 @@
-import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { Icons } from "./UIComponents";
 import { useAuth } from "../contexts/AuthContext";
 
-export default function ExpenseList({ groupId, refreshTrigger, members, onEdit }) {
+export default function ExpenseList({ expenses, loading, members, onEdit, onRefresh }) {
   const { user } = useAuth();
-  const [expenses, setExpenses] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchExpenses();
-  }, [groupId, refreshTrigger]);
-
-  async function fetchExpenses() {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("expenses")
-        .select(`
-          id,
-          title,
-          amount,
-          created_at,
-          created_by,
-          expense_payments (
-            user_id,
-            paid_amount
-          ),
-          expense_splits (
-            user_id,
-            share
-          )
-        `)
-        .eq("group_id", groupId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      setExpenses(data || []);
-    } catch (error) {
-      console.error("Error fetching expenses:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
+  
   // Get Avatar Helper
   const getAvatar = (userId) => {
     const member = members.find(m => m.user_id === userId);
@@ -65,7 +25,7 @@ export default function ExpenseList({ groupId, refreshTrigger, members, onEdit }
 
   if (loading) return <div className="text-center text-[var(--text-muted)] py-8">Loading expenses...</div>;
 
-  if (expenses.length === 0) {
+  if (!expenses || expenses.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-[var(--text-muted)] border-2 border-dashed border-[var(--border-color)] rounded-lg">
         <Icons.Receipt />
@@ -165,7 +125,7 @@ export default function ExpenseList({ groupId, refreshTrigger, members, onEdit }
                                 console.error(error); 
                                 alert("Failed to delete");
                             } else {
-                                fetchExpenses();
+                                onRefresh?.();
                             }
                             }
                         }}
