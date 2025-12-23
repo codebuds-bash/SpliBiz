@@ -6,6 +6,7 @@ import { useToast } from "../components/UIComponents";
 
 export default function Profile() {
   const [profile, setProfile] = useState(null);
+  const [userGroups, setUserGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userAvatar, setUserAvatar] = useState(null);
 
@@ -15,7 +16,7 @@ export default function Profile() {
   useEffect(() => {
     let cancelled = false;
 
-    async function fetchProfile() {
+    async function fetchData() {
       setLoading(true);
       
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -25,33 +26,59 @@ export default function Profile() {
         return;
       }
 
-      // 1. Try to get avatar from Auth Metadata (e.g. Google)
+      // 1. Avatar from Auth Metadata
       if (user.user_metadata?.avatar_url) {
         setUserAvatar(user.user_metadata.avatar_url);
       }
 
-      // 2. Fetch Profile from DB
-      const { data, error } = await supabase
+      // 2. Fetch Profile
+      const profilePromise = supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .maybeSingle();
 
+      // 3. Fetch Groups
+      const groupsPromise = supabase
+        .from("group_members")
+        .select(`
+          role,
+          groups (
+            id,
+            name
+          )
+        `)
+        .eq("user_id", user.id);
+
+      const [profileResponse, groupsResponse] = await Promise.all([profilePromise, groupsPromise]);
+
       if (cancelled) return;
 
-      if (error) {
-        addToast(error.message, "error");
+      // Handle Profile
+      if (profileResponse.error) {
+        addToast(profileResponse.error.message, "error");
       } else {
-        setProfile(data);
-        // 3. If DB has a specific avatar override, it takes precedence
-        if (data?.avatar_url) {
-          setUserAvatar(data.avatar_url);
+        setProfile(profileResponse.data);
+        if (profileResponse.data?.avatar_url) {
+          setUserAvatar(profileResponse.data.avatar_url);
         }
       }
+
+      // Handle Groups
+      if (groupsResponse.error) {
+        console.error("Error fetching groups", groupsResponse.error);
+      } else {
+        const formattedGroups = groupsResponse.data.map(item => ({
+          ...item.groups,
+          role: item.role
+        }));
+        setUserGroups(formattedGroups);
+      }
+
       setLoading(false);
     }
 
-    fetchProfile();
+    fetchData();
 
     return () => { cancelled = true; };
   }, [navigate]);
@@ -160,8 +187,33 @@ export default function Profile() {
               </div>
             </div>
 
+            {/* Groups Section */}
+            <div className="mt-8 animate-fade-in-up delay-100 relative z-10">
+               <h3 className="text-lg font-bold mb-4 px-1">Associated Groups</h3>
+               {userGroups.length === 0 ? (
+                 <p className="text-[var(--text-muted)] text-sm px-1">You are not a member of any groups.</p>
+               ) : (
+                 <div className="space-y-3">
+                   {userGroups.map(group => (
+                     <div key={group.id} className="glass-panel p-4 rounded-xl flex justify-between items-center transition-transform hover:scale-[1.02] cursor-default">
+                        <span className="font-medium text-white">{group.name}</span>
+                        <span 
+                          className={`text-xs px-2 py-1 rounded-full font-bold uppercase tracking-wider border
+                            ${group.role === 'admin' 
+                              ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30' 
+                              : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                            }`}
+                        >
+                          {group.role}
+                        </span>
+                     </div>
+                   ))}
+                 </div>
+               )}
+            </div>
+
             {/* Logout Option */}
-            <div className="mt-8 flex justify-center">
+            <div className="mt-12 flex justify-center">
               <button 
                 onClick={handleLogout}
                 className="text-[var(--text-muted)] hover:text-red-400 text-sm flex items-center gap-2 transition-colors px-4 py-2 rounded-lg hover:bg-white/5"

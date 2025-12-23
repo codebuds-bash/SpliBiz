@@ -7,6 +7,7 @@ import AddExpense from "../components/AddExpense";
 import ExpenseList from "../components/ExpenseList";
 import GroupBalances from "../components/GroupBalances";
 import SettleUpModal from "../components/SettleUpModal";
+import SpendingInsights from "../components/SpendingInsights"; // New Import
 import { useToast, Icons, Modal } from "../components/UIComponents";
 
 export default function GroupDetails() {
@@ -18,6 +19,10 @@ export default function GroupDetails() {
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [currentUserId, setCurrentUserId] = useState(null);
   
+  // Expenses State (Lifted from ExpenseList)
+  const [expenses, setExpenses] = useState([]);
+  const [loadingExpenses, setLoadingExpenses] = useState(true);
+
   // Modals
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isSettleModalOpen, setIsSettleModalOpen] = useState(false);
@@ -83,12 +88,48 @@ export default function GroupDetails() {
     fetchMembers();
   }, [id]);
 
-  /* ---------------- ROLE CHECK ---------------- */
+  /* ---------------- FETCH EXPENSES ---------------- */
+  async function fetchExpenses() {
+    try {
+      setLoadingExpenses(true);
+      const { data, error } = await supabase
+        .from("expenses")
+        .select(`
+          id,
+          title,
+          amount,
+          created_at,
+          created_by,
+          expense_payments (
+            user_id,
+            paid_amount
+          ),
+          expense_splits (
+            user_id,
+            share
+          )
+        `)
+        .eq("group_id", id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setExpenses(data || []);
+    } catch (error) {
+      console.error("Error fetching expenses:", error);
+    } finally {
+      setLoadingExpenses(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchExpenses();
+  }, [id, refreshExpensesTrigger]);
+
+  /* ---------------- SEARCH USERS ---------------- */
   const isAdmin = members.some(
     m => m.user_id === currentUserId && m.role === "admin"
   );
 
-  /* ---------------- SEARCH USERS ---------------- */
   async function searchUsers(query) {
     const { data } = await supabase
       .from("profiles")
@@ -181,19 +222,22 @@ export default function GroupDetails() {
       setIsExpenseModalOpen(false);
       setExpenseToEdit(null);
   }
+  
+  const triggerRefresh = () => setRefreshExpensesTrigger(prev => prev + 1);
 
   return (
     <div className="min-h-screen bg-[var(--bg-body)]">
       <Navbar />
 
-      <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 md:py-12">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-12">
         {/* HEADER */}
         <Link to="/dashboard" className="text-sm text-[var(--text-muted)] hover:text-white mb-3 block">
           ← Back to Dashboard
         </Link>
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-            <h1 className="text-3xl font-bold text-white">
+            <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+              <span className="bg-gradient-to-r from-blue-400 to-green-400 w-2 h-8 rounded-full"></span>
               {group?.name || "Loading..."}
             </h1>
             <div className="flex gap-3">
@@ -212,21 +256,25 @@ export default function GroupDetails() {
             </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* LEFT COLUMN: EXPENSES */}
-            <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* LEFT COLUMN: EXPENSES (Wide) */}
+            <div className="lg:col-span-8">
                 <h3 className="text-xl font-semibold text-white mb-4">Expenses</h3>
                 <ExpenseList 
-                    groupId={id} 
-                    refreshTrigger={refreshExpensesTrigger} 
+                    expenses={expenses}
+                    loading={loadingExpenses}
                     members={members} 
                     onEdit={handleEditExpense} 
+                    onRefresh={triggerRefresh}
                 />
             </div>
 
             {/* RIGHT COLUMN: SIDEBAR */}
-            <div className="space-y-8">
+            <div className="lg:col-span-4 space-y-6">
                 
+                {/* 📊 NEW SPENDING INSIGHTS */}
+                <SpendingInsights expenses={expenses} members={members} />
+
                 {/* 📊 BALANCES */}
                 <GroupBalances groupId={id} members={members} refreshTrigger={refreshExpensesTrigger} />
 
@@ -286,7 +334,7 @@ export default function GroupDetails() {
                               setSearchResults([]);
                             }
                           }}
-                          className="input-field py-1 text-sm"
+                          className="input-field py-1 text-sm bg-black/30"
                         />
                         <button onClick={addByUsername} className="btn-secondary py-1 text-sm">
                           Add
@@ -314,19 +362,12 @@ export default function GroupDetails() {
                       )}
                     </div>
 
-                    <button 
-                        onClick={() => setIsExpenseModalOpen(false)} // Just to toggle something if needed, invite logic is below
-                        className="text-[var(--primary-green)] text-sm hover:underline mt-2 hidden"
-                    >
-                         Invite via Link
-                    </button>
-
                     {inviteToken ? (
                         <div className="mt-4">
                             <input 
                                 readOnly
                                 value={`${window.location.origin}/join?token=${inviteToken}`}
-                                className="input-field text-xs mb-2"
+                                className="input-field text-xs mb-2 bg-black/30"
                             />
                             <button
                                 className="w-full btn-secondary text-xs py-1"
