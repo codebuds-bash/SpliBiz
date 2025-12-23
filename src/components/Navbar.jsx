@@ -78,13 +78,16 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile Hamburger */}
-        <button 
-          className="md:hidden text-white z-50"
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
-          {menuOpen ? <Icons.Close /> : <Icons.Menu />}
-        </button>
+        {/* Mobile Hamburger & Bell */}
+        <div className="md:hidden flex items-center gap-4 z-50">
+          {user && <NotificationBell />}
+          <button 
+            className="text-white"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            {menuOpen ? <Icons.Close /> : <Icons.Menu />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu Overlay */}
