@@ -9,7 +9,23 @@ export default function AuthCallback() {
   useEffect(() => {
     async function handleCallback() {
       // 1️⃣ Let Supabase parse the URL hash & restore session
-      const { data, error } = await supabase.auth.getSession();
+      // Add timeout to prevent hanging on "Verifying..."
+      const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Verification timed out")), 8000)
+      );
+
+      let data, error;
+      try {
+          const result = await Promise.race([
+              supabase.auth.getSession(),
+              timeoutPromise
+          ]);
+          data = result.data;
+          error = result.error;
+      } catch (err) {
+          console.error("Auth callback race error:", err);
+          error = err;
+      }
 
       if (error) {
         console.error("Auth callback error:", error);

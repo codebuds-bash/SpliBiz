@@ -31,7 +31,19 @@ export function AuthProvider({ children }) {
 
     async function initSession() {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // Create a timeout promise that rejects after 5 seconds
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Auth check timed out")), 5000)
+        );
+
+        // Race between actual session check and timeout
+        const { data: { session } } = await Promise.race([
+          supabase.auth.getSession(),
+          timeoutPromise
+        ]).catch(err => {
+            console.error("Auth init race error:", err);
+            return { data: { session: null } }; // Fallback to no session for timeout/error
+        });
         
         if (mounted) {
           if (session?.user) {
@@ -40,8 +52,8 @@ export function AuthProvider({ children }) {
             const p = await fetchProfile(session.user.id);
             // Ensure profile exists if missing
             if (!p) {
-                await ensureProfile(session.user); 
-                await fetchProfile(session.user.id);
+                // Ensure profile doesn't block the UI forever
+                ensureProfile(session.user).then(() => fetchProfile(session.user.id)).catch(console.error);
             }
           } else {
             setUser(null);
@@ -50,6 +62,10 @@ export function AuthProvider({ children }) {
         }
       } catch (error) {
         console.error("Auth init failed:", error);
+        if (mounted) {
+             setUser(null);
+             setProfile(null);
+        }
       } finally {
         if (mounted) setLoading(false);
       }
