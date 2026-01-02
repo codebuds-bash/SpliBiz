@@ -21,21 +21,21 @@ export default function SpendingInsights({ expenses, members }) {
   // Calculations
   const totalSpent = filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
   
-  // My Share Calculation (Cost)
-  const myTotalShare = filteredExpenses.reduce((sum, e) => {
-    const mySplit = e.expense_splits?.find(s => s.user_id === user?.id);
-    return sum + (mySplit?.share || 0);
+  // My Paid Calculation
+  const myTotalPaid = filteredExpenses.reduce((sum, e) => {
+    const myPayment = e.expense_payments?.find(p => p.user_id === user?.id);
+    return sum + (myPayment?.paid_amount || 0);
   }, 0);
 
-  // Spending per member (Share)
-  const memberSpending = useMemo(() => {
+  // Paid per member
+  const memberPayments = useMemo(() => {
     const map = {};
     members.forEach(m => { map[m.user_id] = 0; });
     
     filteredExpenses.forEach(e => {
-       e.expense_splits?.forEach(s => {
-          if (map[s.user_id] !== undefined) {
-              map[s.user_id] += Number(s.share);
+       e.expense_payments?.forEach(p => {
+          if (map[p.user_id] !== undefined) {
+              map[p.user_id] += Number(p.paid_amount);
           }
        });
     });
@@ -49,7 +49,7 @@ export default function SpendingInsights({ expenses, members }) {
       .sort((a, b) => b.amount - a.amount);
   }, [filteredExpenses, members]);
 
-  const maxSpending = Math.max(...memberSpending.map(m => m.amount), 1);
+  const maxPayment = Math.max(...memberPayments.map(m => m.amount), 1);
 
   return (
     <div className="card space-y-6 animate-fade-in-up delay-100">
@@ -77,18 +77,18 @@ export default function SpendingInsights({ expenses, members }) {
            <p className="text-2xl font-bold text-white">₹{totalSpent.toFixed(0)}</p>
         </div>
         <div className="p-4 rounded-xl bg-gradient-to-br from-[var(--primary-green)]/10 to-emerald-500/10 border border-[var(--primary-green)]/20">
-           <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">Your Share</p>
-           <p className="text-2xl font-bold text-[var(--primary-green)]">₹{myTotalShare.toFixed(0)}</p>
+           <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">You Paid</p>
+           <p className="text-2xl font-bold text-[var(--primary-green)]">₹{myTotalPaid.toFixed(0)}</p>
         </div>
       </div>
 
-      {/* Bar Chart: Spending (Share) Distribution */}
-      <div>
-         <h4 className="text-sm font-medium text-white mb-4">Share Distribution</h4>
-         <div className="space-y-3">
-           {memberSpending.map((item) => {
+       {/* Bar Chart: Paid Distribution */}
+       <div>
+          <h4 className="text-sm font-medium text-white mb-4">Total Paid by Member</h4>
+          <div className="space-y-3">
+            {memberPayments.map((item) => {
              const isMe = item.id === user?.id;
-             const percent = (item.amount / maxSpending) * 100;
+              const percent = (item.amount / maxPayment) * 100;
              
              return (
                <div key={item.id} className="group">
