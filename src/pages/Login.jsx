@@ -71,57 +71,9 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Email + Password */}
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-[var(--text-muted)] mb-1 uppercase tracking-wider">
-                Email address
-              </label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="input-field"
-              />
-            </div>
+          
 
-            <div>
-              <label className="block text-xs font-medium text-[var(--text-muted)] mb-1 uppercase tracking-wider">
-                Password
-              </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="input-field"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full btn-primary disabled:opacity-60 disabled:cursor-not-allowed flex justify-center items-center gap-2"
-            >
-              {loading ? (
-                <span>Signing in...</span>
-              ) : (
-                "Sign in"
-              )}
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-gray-700" />
-            <span className="text-xs text-[var(--text-muted)]">OR</span>
-            <div className="flex-1 h-px bg-gray-700" />
-          </div>
-
-          {/* Google Login */}
+          
           <button
             onClick={loginWithGoogle}
             className="flex items-center justify-center w-full border border-gray-700 rounded-md py-2 text-sm text-white hover:bg-gray-800 transition"
@@ -130,12 +82,7 @@ export default function Login() {
             Continue with Google
           </button>
 
-          <p className="text-xs text-[var(--text-muted)] mt-6 text-center">
-            Don’t have an account?{" "}
-            <Link to="/register" className="text-white underline">
-              Create one
-            </Link>
-          </p>
+          
         </div>
       </div>
     </div>
