@@ -8,6 +8,8 @@ import ExpenseList from "../components/ExpenseList";
 import GroupBalances from "../components/GroupBalances";
 import SettleUpModal from "../components/SettleUpModal";
 import SpendingInsights from "../components/SpendingInsights"; // New Import
+import UserRelationshipGraph from "../components/UserRelationshipGraph";
+import { useGroupBalances } from "../hooks/useGroupBalances";
 import { useToast, Icons, Modal } from "../components/UIComponents";
 
 export default function GroupDetails() {
@@ -28,6 +30,10 @@ export default function GroupDetails() {
   const [isSettleModalOpen, setIsSettleModalOpen] = useState(false);
   const [expenseToEdit, setExpenseToEdit] = useState(null);
   const [refreshExpensesTrigger, setRefreshExpensesTrigger] = useState(0);
+
+  // Balances Hook
+  const { balances: groupBalances } = useGroupBalances(expenses, members);
+  const loadingBalances = loadingExpenses;
 
   const [username, setUsername] = useState("");
   const [inviteToken, setInviteToken] = useState(null);
@@ -275,8 +281,16 @@ export default function GroupDetails() {
                 {/* 📊 NEW SPENDING INSIGHTS */}
                 <SpendingInsights expenses={expenses} members={members} />
 
+                {/* 🕸️ RELATIONSHIP GRAPH */}
+                <UserRelationshipGraph members={members} balances={groupBalances} />
+
                 {/* 📊 BALANCES */}
-                <GroupBalances groupId={id} members={members} refreshTrigger={refreshExpensesTrigger} />
+                <GroupBalances 
+                    groupId={id} 
+                    members={members} 
+                    balances={groupBalances}
+                    loading={loadingBalances}
+                />
 
                 {/* MEMBERS */}
                 <div>
