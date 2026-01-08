@@ -266,13 +266,15 @@ export default function GroupDetails() {
             {/* LEFT COLUMN: EXPENSES (Wide) */}
             <div className="lg:col-span-8">
                 <h3 className="text-xl font-semibold text-white mb-4">Expenses</h3>
-                <ExpenseList 
-                    expenses={expenses}
-                    loading={loadingExpenses}
-                    members={members} 
-                    onEdit={handleEditExpense} 
-                    onRefresh={triggerRefresh}
-                />
+                <div className="bg-[#151515] border border-[var(--border-color)] rounded-xl p-2 h-[500px] lg:h-[600px] overflow-y-auto custom-scrollbar">
+                    <ExpenseList 
+                        expenses={expenses}
+                        loading={loadingExpenses}
+                        members={members} 
+                        onEdit={handleEditExpense} 
+                        onRefresh={triggerRefresh}
+                    />
+                </div>
             </div>
 
             {/* RIGHT COLUMN: SIDEBAR */}

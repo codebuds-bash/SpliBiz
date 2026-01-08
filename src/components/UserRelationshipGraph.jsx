@@ -53,8 +53,8 @@ export default function UserRelationshipGraph({ members, balances }) {
            style={{ backgroundImage: 'radial-gradient(circle at center, #ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
       </div>
 
-      <div className="p-6 pb-2 z-10 relative">
-        <h3 className="text-lg font-semibold text-white tracking-wide">
+      <div className="p-6 pb-2 z-10 relative ">
+        <h3 className="text-lg font-semibold text-white tracking-wide ">
             Relationship Graph
         </h3>
       </div>
