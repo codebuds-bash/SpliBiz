@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { useAuth } from "../contexts/AuthContext";
 
-export default function UserRelationshipGraph({ members, balances }) {
+export default function UserRelationshipGraph({ members, balances, expenses }) {
   const { user } = useAuth();
 
   // 1. Identify Current User
@@ -13,20 +13,70 @@ export default function UserRelationshipGraph({ members, balances }) {
     return members.filter((m) => m.user_id !== currentUserId);
   }, [members, currentUserId]);
 
-  if (!currentUserMember) return null; // Should not happen if data is loaded
+  // 3. Calculate Pairwise Debts relative to Current User (Direct History)
+  // "Add up splits of amount paid among or paid by them"
+  const pairwiseBalances = useMemo(() => {
+    const pb = {};
+    if (!expenses || !currentUserId) return pb;
 
-  // 3. Layout Configuration
+    // Initialize balance for all members
+    members.forEach((m) => (pb[m.user_id] = 0));
+
+    expenses.forEach((expense) => {
+      const payments = expense.expense_payments || [];
+      const splits = expense.expense_splits || [];
+      
+      const totalPaid = payments.reduce((sum, p) => sum + Number(p.paid_amount), 0);
+      if (totalPaid === 0) return;
+
+      // For every payment P (by Payer), and every split S (by Debtor)
+      // The Debtor (S) owes Payer (P): S.share * (P.paid / TotalPaid)
+      
+      payments.forEach((payment) => {
+        const payerId = payment.user_id;
+        const paidAmount = Number(payment.paid_amount);
+        const ratio = paidAmount / totalPaid; // Fraction of the bill this payer covered
+
+        splits.forEach((split) => {
+          const debtorId = split.user_id;
+          const shareAmount = Number(split.share);
+          const amountOwedToPayer = shareAmount * ratio;
+
+          // We only care if "Me" is involved as Payer or Debtor
+          
+          // Case A: I am the Payer. Debtor owes Me.
+          if (payerId === currentUserId && debtorId !== currentUserId) {
+             pb[debtorId] = (pb[debtorId] || 0) + amountOwedToPayer;
+          }
+
+          // Case B: I am the Debtor. I owe Payer.
+          if (debtorId === currentUserId && payerId !== currentUserId) {
+             pb[payerId] = (pb[payerId] || 0) - amountOwedToPayer;
+          }
+        });
+      });
+    });
+
+    return pb;
+  }, [expenses, currentUserId, members]);
+
+
+  if (!currentUserMember) return null;
+
+  // 4. Layout Configuration
   const centerX = 50; // percentage
   const centerY = 50; // percentage
   const radius = 35; // percentage of container (relative to smaller dimension)
 
-  // 4. Calculate Positions
+  // 5. Calculate Positions
   const nodes = otherMembers.map((member, index) => {
     const angle = (index / otherMembers.length) * 2 * Math.PI - Math.PI / 2; // Start from top (-90deg)
     const x = centerX + radius * Math.cos(angle);
     const y = centerY + radius * Math.sin(angle);
     return { ...member, x, y };
   });
+
+  // 6. Web/Spider Chart Background Calculation REMOVED
 
   const getAvatar = (member) => {
     if (member.avatar_url) {
@@ -53,9 +103,9 @@ export default function UserRelationshipGraph({ members, balances }) {
            style={{ backgroundImage: 'radial-gradient(circle at center, #ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
       </div>
 
-      <div className="p-6 pb-2 z-10 relative ">
+      <div className="p-6 pb-2 z-10 relative text-center">
         <h3 className="text-lg font-semibold text-white tracking-wide ">
-            Relationship Graph
+            Relationship Web
         </h3>
       </div>
 
@@ -72,11 +122,18 @@ export default function UserRelationshipGraph({ members, balances }) {
                 <stop offset="0%" stopColor="#F87171" stopOpacity="0.1" />
                 <stop offset="100%" stopColor="#F87171" stopOpacity="0.8" />
              </linearGradient>
+             <filter id="glow">
+                <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+             </filter>
           </defs>
-          
+
+          {/* --- ACTIVE DEBT LINES --- */}
           {nodes.map((node) => {
-            const balance = balances[node.user_id] || 0;
-            // If balance > 0, I receive (Green). If < 0, I pay (Red).
+            const balance = pairwiseBalances[node.user_id] || 0;
             const isPositive = balance >= 0;
             const strokeColor = isPositive ? "#4ADE80" : "#F87171";
             
@@ -85,6 +142,18 @@ export default function UserRelationshipGraph({ members, balances }) {
 
             return (
               <g key={`line-${node.user_id}`}>
+                {/* Glow Effect Line */}
+                <line
+                  x1={`${centerX}%`}
+                  y1={`${centerY}%`}
+                  x2={`${node.x}%`}
+                  y2={`${node.y}%`}
+                  stroke={strokeColor}
+                  strokeWidth="3"
+                  strokeOpacity="0.2"
+                  filter="url(#glow)"
+                />
+                {/* Core Line */}
                 <line
                   x1={`${centerX}%`}
                   y1={`${centerY}%`}
@@ -92,9 +161,18 @@ export default function UserRelationshipGraph({ members, balances }) {
                   y2={`${node.y}%`}
                   stroke={strokeColor}
                   strokeWidth="1.5"
-                  strokeOpacity="0.4"
-                  strokeDasharray="4 2"
+                  strokeLinecap="round"
+                  strokeDasharray={isPositive ? "none" : "5 3"}
                 />
+                
+                {/* Moving Particle Animation along the line */}
+                 <circle r="3" fill={strokeColor}>
+                    <animateMotion 
+                        dur="2s" 
+                        repeatCount="indefinite"
+                        path={`M ${isPositive ? node.x : centerX} ${isPositive ? node.y : centerY} L ${isPositive ? centerX : node.x} ${isPositive ? centerY : node.y}`} 
+                    />
+                 </circle>
               </g>
             );
           })}
@@ -107,23 +185,20 @@ export default function UserRelationshipGraph({ members, balances }) {
         >
           <div className="relative">
              <div className="absolute inset-0 bg-blue-500 blur-xl opacity-20 rounded-full"></div>
-             <div className="w-20 h-20 rounded-full border-2 border-blue-500/30 shadow-2xl overflow-hidden bg-[#2a2a2a] relative z-10">
+             <div className="w-16 h-16 rounded-full border-2 border-blue-500/50 shadow-[0_0_30px_rgba(59,130,246,0.5)] overflow-hidden bg-[#2a2a2a] relative z-10">
                 {getAvatar(currentUserMember)}
              </div>
           </div>
-          <div className="mt-3 bg-[#1a1a1a]/80 border border-white/10 px-3 py-1 rounded-full text-xs text-blue-200 font-bold backdrop-blur-md shadow-lg">
+          <div className="mt-2 bg-[#1a1a1a]/90 border border-blue-500/30 px-3 py-0.5 rounded-full text-[10px] text-blue-200 font-bold backdrop-blur-md shadow-lg tracking-wider uppercase">
             You
           </div>
         </div>
 
         {/* Leaf Nodes (Others) */}
         {nodes.map((node) => {
-           const balance = balances[node.user_id] || 0;
+           const balance = pairwiseBalances[node.user_id] || 0;
            const isPositive = balance >= 0;
            const isSettled = Math.abs(balance) < 1;
-
-           // Dynamic positioning adjustment if needed (simplified here)
-           // Using transform for precise centering
            
            return (
             <div

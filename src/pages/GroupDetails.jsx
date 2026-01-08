@@ -284,7 +284,7 @@ export default function GroupDetails() {
                 <SpendingInsights expenses={expenses} members={members} />
 
                 {/* 🕸️ RELATIONSHIP GRAPH */}
-                <UserRelationshipGraph members={members} balances={groupBalances} />
+                <UserRelationshipGraph members={members} balances={groupBalances} expenses={expenses} />
 
                 {/* 📊 BALANCES */}
                 <GroupBalances 
