@@ -7,6 +7,22 @@ export default function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // 📱 Mobile Proxy Check
+    // If we have a 'redirect_to' param, this request comes from the mobile app
+    // We forward the auth hash (tokens) to the mobile deep link
+    const params = new URLSearchParams(window.location.search);
+    const redirectTo = params.get('redirect_to');
+    
+    if (redirectTo) {
+        const hash = window.location.hash;
+        if (hash) {
+            // Decode in case it's encoded, though usually browsers handle this
+            // We use window.location.href to redirect out of the browser to the app
+            window.location.href = redirectTo + hash;
+            return;
+        }
+    }
+
     async function handleCallback() {
       // 1️⃣ Let Supabase parse the URL hash & restore session
       // Add timeout to prevent hanging on "Verifying..."
