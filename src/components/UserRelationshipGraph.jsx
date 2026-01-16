@@ -233,7 +233,7 @@ export default function UserRelationshipGraph({ members, balances, expenses }) {
                                 ? 'bg-green-500/10 border-green-500/20 text-green-400' 
                                 : 'bg-red-500/10 border-red-500/20 text-red-400'
                             }`}>
-                            <span>{isPositive ? "Receive" : "Pay"}</span>
+                            <span>{isPositive ? "Take" : "Pay"}</span>
                             <span>₹{Math.abs(balance).toFixed(0)}</span>
                         </div>
                     ) : (

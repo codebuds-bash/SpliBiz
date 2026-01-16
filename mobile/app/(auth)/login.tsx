@@ -1,35 +1,32 @@
 import React, { useState } from 'react';
-import { View, Text, Alert, Platform } from 'react-native';
+import { View, Text, Alert, Platform, TouchableOpacity, Image } from 'react-native';
 import { supabase } from '../../src/lib/supabase';
-import { ScreenWrapper, Button } from '../../src/components/UI';
+import { ScreenWrapper } from '../../src/components/UI';
 import { useRouter } from 'expo-router';
 import { styled } from 'nativewind';
+import { AntDesign } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import { useTheme } from '../../src/contexts/ThemeContext';
 
 const StyledText = styled(Text);
+const StyledView = styled(View);
+const StyledImage = styled(Image);
 
 // Handle redirects
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
 
   const loginWithGoogle = async () => {
     setLoading(true);
     try {
-        // 1. Create the deep link that points back to THIS device (e.g. exp://192.168.1.5:8081/--/auth)
-        // This is dynamic and changes on every network/user
-        const deepLink = Linking.createURL('/auth');
-        console.log('Mobile Deep Link:', deepLink);
-
-        // 2. Create the "Proxy" URL pointing to our hosted web app
-        // We pass the deepLink as a parameter so the web page knows where to bounce the user back
-        // IMPORTANT: You might need to add 'https://splibiz.vercel.app/auth/callback*' to Supabase Redirect URLs
+        const deepLink = Linking.createURL('/');
         const redirectUrl = `https://splibiz.vercel.app/auth/callback?redirect_to=${encodeURIComponent(deepLink)}`;
-        console.log('Supabase Redirect URL:', redirectUrl);
-
+        
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
@@ -39,15 +36,11 @@ export default function LoginScreen() {
         });
 
         if (data?.url) {
-            // We expect the browser to open the 'redirectUrl' (web proxy), which will then redirect to our 'deepLink'
-            // However, openAuthSessionAsync needs to know what URL to wait for.
-            // It should wait for 'exp://...' (the deepLink) to come back.
             const result = await WebBrowser.openAuthSessionAsync(data.url, deepLink);
             
             if (result.type === 'success' && result.url) {
-                // Parse access_token and refresh_token from the URL fragment
                 const url = new URL(result.url);
-                const params = new URLSearchParams(url.hash.substring(1)); // Remove the '#'
+                const params = new URLSearchParams(url.hash.substring(1));
                 
                 const accessToken = params.get('access_token');
                 const refreshToken = params.get('refresh_token');
@@ -58,7 +51,6 @@ export default function LoginScreen() {
                         refresh_token: refreshToken,
                     });
                     if (sessionError) throw sessionError;
-                    // AuthState listener in context will pick this up and redirect
                 }
             }
         }
@@ -70,26 +62,43 @@ export default function LoginScreen() {
   };
 
   return (
-    <ScreenWrapper className="justify-center">
-      <View className="mb-20 items-center">
-        <StyledText className="text-4xl font-bold text-white mb-4 text-center">SpliBiz</StyledText>
-        <StyledText className="text-gray-400 text-base text-center">Manage expenses with your group</StyledText>
-      </View>
-
-      <View className="gap-4">
-        <Button 
-            title="Continue with Google" 
-            onPress={loginWithGoogle} 
-            loading={loading}
-            variant="secondary"
-        />
-      </View>
+    <ScreenWrapper className="justify-center items-center">
+      {/* Brand Logo / Name */}
       
-      <View className="mt-8">
-          <StyledText className="text-gray-600 text-xs text-center">
-            By continuing, you agree to our Terms and Privacy Policy.
+
+      <StyledView className={`w-full max-w-[400px] border rounded-2xl p-8 shadow-xl ${isDark ? 'bg-dark-surface border-dark-border shadow-black/50' : 'bg-surface border-border shadow-gray-200'}`}>
+        <StyledView className="items-center mb-8">
+          <StyledView className="items-center">
+         <StyledImage 
+            source={require('../../assets/app_icons/icon.png')}
+            className="w-20 h-20 rounded-xl mb-4"
+            resizeMode="contain"
+         />
+      </StyledView>
+          <StyledText className={`text-3xl font-bold mb-2 font-gl ${isDark ? 'text-white' : 'text-main'}`}>
+            Welcome
           </StyledText>
-      </View>
+          <StyledText className={`text-sm text-center font-sans ${isDark ? 'text-dark-muted' : 'text-muted'}`}>
+            Sign in to start splitting with friends.
+          </StyledText>
+        </StyledView>
+
+        <TouchableOpacity 
+            onPress={loginWithGoogle}
+            disabled={loading}
+            activeOpacity={0.8}
+            className={`flex-row items-center justify-center w-full border rounded-xl py-4 ${isDark ? 'bg-white border-white' : 'bg-black border-black'}`}
+        >
+            <StyledImage 
+                source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }} 
+                className="w-5 h-5 mr-3"
+                resizeMode="contain"
+            />
+            <StyledText className={`font-bold text-base font-sans ${isDark ? 'text-black' : 'text-white'}`}>
+                Continue with Google
+            </StyledText>
+        </TouchableOpacity>
+      </StyledView>
     </ScreenWrapper>
   );
 }

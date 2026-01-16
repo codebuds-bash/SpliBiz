@@ -55,7 +55,7 @@ export function AuthProvider({ children }) {
              setProfile(null);
         }
       } finally {
-        // Only set loading to false here if we haven't received an auth state change yet
+        // Only set loading to false here if we haven't Taked an auth state change yet
         // identifying that we are done with the initial check
         if (mounted) setLoading(false);
       }

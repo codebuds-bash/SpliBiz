@@ -1,187 +1,150 @@
 import React, { useMemo } from 'react';
-import { View, Text, Dimensions } from 'react-native';
-import Svg, { Line, Polygon, Defs, Marker, G } from 'react-native-svg';
-import { useAuth } from '../contexts/AuthContext';
+import { View, Text } from 'react-native';
+import { Svg, Circle, Line, Text as SvgText, G, Defs, Marker, Polygon } from 'react-native-svg';
 import { styled } from 'nativewind';
+import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const StyledView = styled(View);
 const StyledText = styled(Text);
 
-// Types
 interface Member {
     user_id: string;
     name: string;
     avatar_url?: string;
-    role?: string;
 }
 
 interface Expense {
-    id: string;
-    created_by: string;
+    expense_splits: any[];
+    expense_payments: any[];
     amount: number;
-    expense_payments: {
-        user_id: string;
-        paid_amount: number;
-    }[];
-    expense_splits: {
-        user_id: string;
-        share: number;
-    }[];
+    created_by: string;
 }
 
-interface Props {
+interface UserRelationshipGraphProps {
     members: Member[];
     expenses: Expense[];
 }
 
-export default function UserRelationshipGraph({ members, expenses }: Props) {
-  const { user } = useAuth();
-  const currentUserId = user?.id;
-
-  // 0. Safety Checks
-  if (!members || !user) return null;
-
-  // 1. Layout Config
-  const screenWidth = Dimensions.get('window').width - 40; // padding
-  const size = screenWidth; // Square aspect ratio
-  const centerX = size / 2;
-  const centerY = size / 2;
-  const radius = size * 0.35;
-
-  // 2. Calculate Positions (Circle Layout)
-  const nodes = useMemo(() => {
-    return members.map((member, index) => {
-        const total = members.length;
-        const angle = (index / total) * 2 * Math.PI - Math.PI / 2;
-        const x = centerX + radius * Math.cos(angle);
-        const y = centerY + radius * Math.sin(angle);
-        return { ...member, x, y };
-    });
-  }, [members, centerX, centerY, radius]);
-
-  // 3. Calculate Global Graph Edges (copy of web logic)
-  const graphEdges = useMemo(() => {
-    if (!expenses) return [];
+export default function UserRelationshipGraph({ members, expenses }: UserRelationshipGraphProps) {
+    const { isDark } = useTheme();
+    const { user } = useAuth();
     
-    const debts: Record<string, Record<string, number>> = {};
-    members.forEach(m1 => {
-        debts[m1.user_id] = {};
-        members.forEach(m2 => { debts[m1.user_id][m2.user_id] = 0; });
-    });
+    // --- 1. Calculate Balances ---
+    const balances = useMemo(() => {
+        const bal: Record<string, number> = {};
+        members.forEach(m => bal[m.user_id] = 0);
 
-    expenses.forEach((expense) => {
-      const payments = expense.expense_payments || [];
-      const splits = expense.expense_splits || [];
-      const totalPaid = payments.reduce((sum, p) => sum + Number(p.paid_amount), 0);
-      if (totalPaid === 0) return;
-
-      payments.forEach((payment) => {
-        const payerId = payment.user_id;
-        const ratio = Number(payment.paid_amount) / totalPaid;
-
-        splits.forEach((split) => {
-          const debtorId = split.user_id;
-          if (payerId !== debtorId) {
-             const amountOwed = Number(split.share) * ratio;
-             if (debts[debtorId] && debts[debtorId][payerId] !== undefined) {
-                 debts[debtorId][payerId] += amountOwed;
-             }
-          }
+        expenses.forEach(exp => {
+            // Who paid?
+            exp.expense_payments.forEach((payment: any) => {
+                const pid = payment.user_id;
+                if (bal[pid] !== undefined) bal[pid] += parseFloat(payment.paid_amount);
+            });
+            // Who owes?
+            exp.expense_splits.forEach((split: any) => {
+                const sid = split.user_id;
+                if (bal[sid] !== undefined) bal[sid] -= parseFloat(split.share);
+            });
         });
-      });
-    });
+        return bal;
+    }, [expenses, members]);
 
-    const edges: { from: string; to: string; amount: number }[] = [];
-    const processedPairs = new Set(); 
+    // --- 2. Relationship Mapping ---
+    const relationships = useMemo(() => {
+        if (!user) return [];
+        return members.filter(m => m.user_id !== user.id).map(m => ({
+            id: m.user_id,
+            name: m.name.split(' ')[0],
+            balance: balances[m.user_id] || 0
+        }));
+    }, [balances, members, user]);
 
-    members.forEach(m1 => {
-        members.forEach(m2 => {
-            if (m1.user_id === m2.user_id) return;
-            const key = [m1.user_id, m2.user_id].sort().join('-');
-            if (processedPairs.has(key)) return;
-            processedPairs.add(key);
+    // --- 3. Layout Logic ---
+    const width = 340;
+    const height = 220;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = 90;
 
-            const aOwesB = debts[m1.user_id][m2.user_id] || 0;
-            const bOwesA = debts[m2.user_id][m1.user_id] || 0;
-            const net = aOwesB - bOwesA;
+    // Current User Node
+    const myBalance = user ? (balances[user.id] || 0) : 0;
+    const myNode = {
+        x: centerX,
+        y: centerY,
+        r: 25,
+        color: myBalance >= 0 ? '#3ecf8e' : '#ef4444',
+        label: "You",
+        subLabel: `₹${Math.abs(myBalance).toFixed(0)}`
+    };
 
-            if (Math.abs(net) > 1) {
-                if (net > 0) edges.push({ from: m1.user_id, to: m2.user_id, amount: net });
-                else edges.push({ from: m2.user_id, to: m1.user_id, amount: Math.abs(net) });
-            }
-        });
-    });
-    return edges;
-  }, [expenses, members]);
+    const others = relationships;
+    const angleStep = (2 * Math.PI) / (others.length || 1);
+    
+    // Colors
+    const lineColor = isDark ? "#535353" : "#e2e8f0";
+    const textColor = isDark ? "#ffffff" : "#0f172a";
 
-  return (
-    <Card className="p-0 overflow-hidden mb-6 h-[400px] bg-gray-900 border-gray-800">
-        <StyledView className="p-4 bg-gray-900/50">
-            <StyledText className="text-white font-bold text-lg text-center">Relationship Web</StyledText>
+    return (
+        <StyledView className={`rounded-2xl p-4 border ${isDark ? 'bg-dark-surface border-dark-border' : 'bg-surface border-border'}`}>
+             <StyledView className="flex-row items-center justify-between mb-4">
+                 <StyledText className={`font-bold font-sans text-base ${isDark ? 'text-white' : 'text-main'}`}>Group Balance Map</StyledText>
+                 <StyledView className={`px-2 py-1 rounded bg-opacity-20 ${myBalance >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                     <StyledText className={`text-xs font-bold ${myBalance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                         {myBalance >= 0 ? "You are owed" : "You owe"} ₹{Math.abs(myBalance).toFixed(0)}
+                     </StyledText>
+                 </StyledView>
+             </StyledView>
+
+             <View style={{ alignItems: 'center' }}>
+                 <Svg width={width} height={height}>
+                     <Defs>
+                        <Marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <Polygon points="0 0, 10 5, 0 10" fill={isDark ? "#b3b3b3" : "#94a3b8"} />
+                        </Marker>
+                     </Defs>
+
+                     {/* LINES */}
+                     {others.map((node, i) => {
+                         const angle = i * angleStep - Math.PI / 2;
+                         const x = centerX + radius * Math.cos(angle);
+                         const y = centerY + radius * Math.sin(angle);
+                         
+                         let stroke = lineColor;
+                         if (myBalance > 0 && node.balance < 0) stroke = "#1db954"; 
+                         else if (myBalance < 0 && node.balance > 0) stroke = "#ef4444";
+                         
+                         return (
+                            <Line key={`line-${i}`} x1={myNode.x} y1={myNode.y} x2={x} y2={y} stroke={stroke} strokeWidth="2" strokeDasharray={stroke === lineColor ? "4" : "0"} />
+                         );
+                     })}
+
+                     {/* NODES */}
+                     {others.map((node, i) => {
+                         const angle = i * angleStep - Math.PI / 2;
+                         const x = centerX + radius * Math.cos(angle);
+                         const y = centerY + radius * Math.sin(angle);
+                         const nodeColor = node.balance >= 0 ? (isDark ? '#1db954' : '#22c55e') : (isDark ? '#fa7970' : '#ef4444');
+
+                         return (
+                            <G key={`node-${i}`}>
+                                <Circle cx={x} cy={y} r="20" fill={isDark ? "#212121" : "#f1f5f9"} stroke={nodeColor} strokeWidth="2" />
+                                <SvgText x={x} y={y - 5} fill={textColor} fontSize="10" fontWeight="bold" textAnchor="middle" alignmentBaseline="middle">
+                                    {node.name}
+                                </SvgText>
+                                <SvgText x={x} y={y + 8} fill={node.balance >= 0 ? (isDark ? '#1db954' : '#22c55e') : (isDark ? '#fa7970' : '#ef4444')} fontSize="9" fontWeight="bold" textAnchor="middle" alignmentBaseline="middle">
+                                    {node.balance >= 0 ? '+' : ''}{Math.round(node.balance)}
+                                </SvgText>
+                            </G>
+                         );
+                     })}
+
+                     {/* MY NODE */}
+                     <Circle cx={myNode.x} cy={myNode.y} r={myNode.r} fill={myNode.color} />
+                     <SvgText x={myNode.x} y={myNode.y - 6} fill="#fff" fontSize="12" fontWeight="bold" textAnchor="middle" alignmentBaseline="middle">You</SvgText>
+                     <SvgText x={myNode.x} y={myNode.y + 8} fill="#fff" fontSize="10" fontWeight="normal" textAnchor="middle" alignmentBaseline="middle">{myNode.subLabel}</SvgText>
+                 </Svg>
+             </View>
         </StyledView>
-        <View style={{ width: size, height: size, alignSelf: 'center' }}>
-            <Svg height="100%" width="100%">
-                <Defs>
-                    <Marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                        <Polygon points="0,0 0,10 10,5" fill="#60A5FA" />
-                    </Marker>
-                </Defs>
-
-                {/* Edges */}
-                {graphEdges.map((edge, i) => {
-                    const startNode = nodes.find(n => n.user_id === edge.from);
-                    const endNode = nodes.find(n => n.user_id === edge.to);
-                    if (!startNode || !endNode) return null;
-
-                    const isMyConnection = edge.from === currentUserId || edge.to === currentUserId;
-                    const strokeColor = isMyConnection ? "#60A5FA" : "rgba(255,255,255,0.1)";
-                    const strokeWidth = isMyConnection ? 2 : 1;
-
-                    return (
-                        <G key={`edge-${i}`}>
-                            <Line
-                                x1={startNode.x}
-                                y1={startNode.y}
-                                x2={endNode.x}
-                                y2={endNode.y}
-                                stroke={strokeColor}
-                                strokeWidth={strokeWidth}
-                                markerEnd={isMyConnection ? "url(#arrow)" : undefined}
-                            />
-                        </G>
-                    )
-                })}
-            </Svg>
-
-            {/* Nodes (Overlayed Absolute Views for better styling than SVG) */}
-            {nodes.map(node => {
-                const isMe = node.user_id === currentUserId;
-                return (
-                    <StyledView 
-                        key={node.user_id}
-                        className={`absolute items-center justify-center`}
-                        style={{ 
-                            left: node.x - 20, 
-                            top: node.y - 20, 
-                            width: 40, 
-                            height: 40 
-                        }}
-                    >
-                        <StyledView className={`w-10 h-10 rounded-full items-center justify-center border-2 ${isMe ? 'border-blue-500 bg-gray-800' : 'border-gray-700 bg-gray-900'}`}>
-                             <StyledText className={`font-bold text-xs ${isMe ? 'text-blue-400' : 'text-gray-400'}`}>
-                                {node.name.substring(0, 2).toUpperCase()}
-                             </StyledText>
-                        </StyledView>
-                        {isMe && <StyledView className="absolute -bottom-5 bg-blue-500/20 px-2 py-0.5 rounded-full"><StyledText className="text-[10px] text-blue-300 font-bold">YOU</StyledText></StyledView>}
-                    </StyledView>
-                )
-            })}
-        </View>
-    </Card>
-  );
+    );
 }
-
-// Simple wrapper for Card import since we are inside a file & to avoid circular deps if any
-const Card = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <StyledView className={`border rounded-xl ${className}`}>{children}</StyledView>
-)
