@@ -1,5 +1,6 @@
 import { FiGithub, FiInstagram, FiLinkedin, FiHeart } from "react-icons/fi";
 import { Link } from "react-router-dom";
+import kulhadChai from "../assets/kulhad_chai.png";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -84,6 +85,23 @@ export default function Footer() {
               Reach out via LinkedIn or Instagram.
             </p>
           </div>
+        </div>
+
+        {/* Buy Me A Chai */}
+        <div className="flex justify-center mb-12">
+          <a
+            href="https://www.buymeacoffee.com/dhruvsuthar"
+            target="_blank"
+            rel="noreferrer" 
+            className="group flex items-center gap-3 px-5 py-2.5 rounded-full bg-[#1a1a1a] border border-white/10 hover:border-orange-500/50 hover:bg-orange-500/10 transition-all duration-300"
+          >
+            <span className="text-gray-300 font-medium group-hover:text-orange-400 transition-colors">Buy me a Kulhad Chai</span>
+            <img 
+              src={kulhadChai} 
+              alt="Kulhad Chai" 
+              className="w-8 h-8 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300"
+            />
+          </a>
         </div>
 
         {/* Bottom Bar */}
