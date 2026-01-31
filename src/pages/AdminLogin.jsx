@@ -15,93 +15,83 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
 
-    // Hardcoded credentials check from .env
     const ADMIN_USER = import.meta.env.VITE_ADMIN_USER;
     const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASS;
 
-    // Simulate network delay for effect
     await new Promise(resolve => setTimeout(resolve, 800));
 
     if (email === ADMIN_USER && password === ADMIN_PASS) {
-        // SUCCESS: Set a special local storage flag
-        // We aren't using Supabase auth for this specific super-admin mode anymore
         localStorage.setItem("super_admin_session", "true");
         localStorage.setItem("super_admin_email", email);
-        
-        addToast("Welcome, Creator.", "success");
+        addToast("Welcome back, Admin.", "success");
         navigate("/admin-dashboard");
     } else {
-        addToast("Invalid System Credentials", "error");
+        addToast("Invalid credentials", "error");
         setPassword("");
         setLoading(false);
     }
   }
   
-  // ... render ...
-
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 font-mono relative overflow-hidden">
-        {/* Background Grid */}
-        <div 
-            className="absolute inset-0 opacity-20 pointer-events-none"
-            style={{ 
-                backgroundImage: 'linear-gradient(rgba(0, 255, 0, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 0, 0.1) 1px, transparent 1px)',
-                backgroundSize: '30px 30px'
-            }}
-        />
-
-        <div className="relative z-10 w-full max-w-md bg-[#111] border border-green-500/30 p-8 rounded-xl shadow-2xl shadow-green-500/10">
+    <div className="min-h-screen bg-[var(--bg-body)] flex flex-col items-center justify-center p-4">
+        
+        {/* Simple modern card */}
+        <div className="w-full max-w-md glass-panel p-8 rounded-2xl">
             <div className="flex justify-center mb-6">
-                <div className="p-4 rounded-full bg-green-500/10 border border-green-500/30">
-                    <FiLock className="w-8 h-8 text-green-500" />
+                <div className="p-3 rounded-full bg-[var(--primary-green)]/10 text-[var(--primary-green)]">
+                    <FiLock className="w-6 h-6" />
                 </div>
             </div>
 
-            <h1 className="text-3xl font-bold text-center text-white mb-2 tracking-tighter">
-                <span className="text-green-500">SYSTEM</span> ACCESS
+            <h1 className="text-2xl font-bold text-center text-white mb-2">
+                Admin Access
             </h1>
-            <p className="text-center text-gray-500 text-xs mb-8 uppercase tracking-widest">
-                Enter Credentials
+            <p className="text-center text-[var(--text-muted)] text-sm mb-8">
+                Sign in to manage the splibiz platform.
             </p>
 
             <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                   <label className="text-xs text-green-500 mb-1 block uppercase">Admin Email</label>
+                   <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block uppercase tracking-wider">Email Address</label>
                    <input 
                         type="email" 
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-black border border-green-500/30 rounded p-3 text-white focus:outline-none focus:border-green-500 transition-colors placeholder-gray-700"
+                        className="input-field w-full"
                         placeholder="admin@splibiz.com"
+                        required
                    />
                 </div>
                 <div>
-                   <label className="text-xs text-green-500 mb-1 block uppercase">Passphrase</label>
+                   <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block uppercase tracking-wider">Password</label>
                    <input 
                         type="password" 
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-black border border-green-500/30 rounded p-3 text-white focus:outline-none focus:border-green-500 transition-colors placeholder-gray-700"
+                        className="input-field w-full"
                         placeholder="••••••••"
+                        required
                    />
                 </div>
 
                 <button
                     type="submit"
                     disabled={loading}
-                    className="w-full group relative flex items-center justify-center gap-3 bg-green-600 text-black font-bold py-4 px-6 rounded-lg hover:bg-green-500 transition-all active:scale-95 disabled:opacity-50 mt-6"
+                    className="btn-primary w-full mt-2 py-3 flex justify-center items-center gap-2"
                 >
                     {loading ? (
-                    <FiCpu className="animate-spin text-xl" />
+                        <>
+                            <FiCpu className="animate-spin" /> Authenticating...
+                        </>
                     ) : (
-                        <span>AUTHENTICATE</span>
+                        <span>Sign In</span>
                     )}
                 </button>
             </form>
 
             <div className="mt-8 text-center">
-                <button onClick={() => navigate('/')} className="text-xs text-gray-600 hover:text-green-500 transition-colors">
-                    &lt; RETURN TO MAIN TERMINAL
+                <button onClick={() => navigate('/')} className="text-sm text-[var(--text-muted)] hover:text-white transition-colors">
+                    Back to Home
                 </button>
             </div>
       </div>
