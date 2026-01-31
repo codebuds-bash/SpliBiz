@@ -45,6 +45,9 @@ export default function Login() {
 
   // Google login
   async function loginWithGoogle() {
+  if (location.state?.from) {
+      localStorage.setItem("post_login_redirect", location.state.from.pathname);
+  }
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {

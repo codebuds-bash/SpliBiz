@@ -59,9 +59,14 @@ export default function AuthCallback() {
 
         // 3️⃣ Check for pending join or go to dashboard
         const joinToken = localStorage.getItem("join_token");
+        const postLoginRedirect = localStorage.getItem("post_login_redirect");
+        
         if (joinToken) {
            localStorage.removeItem("join_token");
            navigate(`/join?token=${joinToken}`, { replace: true });
+        } else if (postLoginRedirect) {
+           localStorage.removeItem("post_login_redirect");
+           navigate(postLoginRedirect, { replace: true });
         } else {
            navigate("/dashboard", { replace: true });
         }
