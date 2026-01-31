@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../components/UIComponents";
 import { FiLock, FiCpu } from "react-icons/fi";
@@ -16,27 +15,29 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
 
-    try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+    // Hardcoded credentials check from .env
+    const ADMIN_USER = import.meta.env.VITE_ADMIN_USER;
+    const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASS;
 
-        if (error) throw error;
+    // Simulate network delay for effect
+    await new Promise(resolve => setTimeout(resolve, 800));
 
-        // Check if admin
-        // We import isAdmin from utils, but we can also just check against the list on the fly if needed.
-        // But the AdminRoute will do the heavy lifting of protecting the route.
-        // Here we just redirect.
+    if (email === ADMIN_USER && password === ADMIN_PASS) {
+        // SUCCESS: Set a special local storage flag
+        // We aren't using Supabase auth for this specific super-admin mode anymore
+        localStorage.setItem("super_admin_session", "true");
+        localStorage.setItem("super_admin_email", email);
         
+        addToast("Welcome, Creator.", "success");
         navigate("/admin-dashboard");
-        
-    } catch (error) {
-        addToast(error.message, "error");
-    } finally {
+    } else {
+        addToast("Invalid System Credentials", "error");
+        setPassword("");
         setLoading(false);
     }
   }
+  
+  // ... render ...
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 font-mono relative overflow-hidden">
