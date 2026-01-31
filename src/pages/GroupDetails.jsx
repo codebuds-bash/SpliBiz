@@ -24,6 +24,15 @@ export default function GroupDetails() {
   // Expenses State (Lifted from ExpenseList)
   const [expenses, setExpenses] = useState([]);
   const [loadingExpenses, setLoadingExpenses] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState("ALL");
+
+  const filteredExpenses = selectedMonth === "ALL" 
+      ? expenses 
+      : expenses.filter(e => {
+          const d = new Date(e.created_at);
+          const mStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          return mStr === selectedMonth;
+      });
 
   // Modals
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -265,10 +274,34 @@ export default function GroupDetails() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* LEFT COLUMN: EXPENSES (Wide) */}
             <div className="lg:col-span-8">
-                <h3 className="text-xl font-semibold text-white mb-4">Expenses</h3>
+                <div className="flex items-center justify-between mb-4">
+                     <h3 className="text-xl font-semibold text-white">Expenses</h3>
+                     
+                     {/* Month Filter */}
+                     <select 
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(e.target.value)}
+                        className="bg-[#151515] text-white text-sm border border-[var(--border-color)] rounded-lg px-3 py-1.5 focus:border-[var(--primary-green)] outline-none"
+                     >
+                        <option value="ALL">All Months</option>
+                        {Array.from(new Set(expenses.map(e => {
+                            const d = new Date(e.created_at);
+                            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                        }))).sort().reverse().map(monthStr => {
+                             const [y, m] = monthStr.split('-');
+                             const date = new Date(y, m - 1);
+                             return (
+                                 <option key={monthStr} value={monthStr}>
+                                     {date.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                                 </option>
+                             );
+                        })}
+                     </select>
+                </div>
+
                 <div className="bg-[#151515] border border-[var(--border-color)] rounded-xl p-2 h-[500px] lg:h-[600px] overflow-y-auto custom-scrollbar">
                     <ExpenseList 
-                        expenses={expenses}
+                        expenses={filteredExpenses}
                         loading={loadingExpenses}
                         members={members} 
                         onEdit={handleEditExpense} 

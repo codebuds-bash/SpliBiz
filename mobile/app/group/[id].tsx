@@ -8,6 +8,7 @@ import { ScreenWrapper } from '../../src/components/UI';
 import UserRelationshipGraph from '../../src/components/UserRelationshipGraph';
 import ExpenseModal from '../../src/components/ExpenseModal';
 import GroupInfoModal from '../../src/components/GroupInfoModal';
+import SettleUpModal from '../../src/components/SettleUpModal';
 import { styled } from 'nativewind';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -84,6 +85,7 @@ export default function GroupDetailsScreen() {
   // Helper for date
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+  /* -------------- UI HELPERS -------------- */
   const renderExpense = ({ item }: { item: Expense }) => {
     const payer = getMember(item.created_by);
     
@@ -93,20 +95,26 @@ export default function GroupDetailsScreen() {
     const netBalance = myPayment - myShare;
 
     let statusText = "not involved";
-    let statusColor = isDark ? "text-gray-500" : "text-muted";
+    // Using simple logical colors (Green = You get back, Red = You pay)
+    // Premium Look: Status pills
+    let statusBg = isDark ? "bg-gray-800" : "bg-gray-100";
+    let statusTextColor = isDark ? "text-gray-400" : "text-gray-500";
     let statusAmount = "";
 
     if (netBalance > 0.01) {
         statusText = "you lent";
-        statusColor = isDark ? "text-green-400" : "text-green-500";
+        statusBg = "bg-green-500/10";
+        statusTextColor = "text-green-500";
         statusAmount = `₹${netBalance.toFixed(2)}`;
     } else if (netBalance < -0.01) {
         statusText = "you borrowed";
-        statusColor = isDark ? "text-red-400" : "text-red-500";
+        statusBg = "bg-red-500/10";
+        statusTextColor = "text-red-500";
         statusAmount = `₹${Math.abs(netBalance).toFixed(2)}`;
     } else if (myPayment > 0) {
         statusText = "you paid";
-        statusColor = isDark ? "text-gray-400" : "text-muted";
+        statusBg = isDark ? "bg-gray-700" : "bg-gray-200";
+        statusTextColor = isDark ? "text-gray-300" : "text-gray-600";
         statusAmount = `₹${myPayment.toFixed(2)}`;
     }
 
@@ -114,33 +122,43 @@ export default function GroupDetailsScreen() {
     const month = months[date.getMonth()];
     const day = date.getDate();
 
+    // Fix: "Grey color in date is not looking good update it with black" -> Using "text-black" or "text-white" for date numbers
+    const dateNumColor = isDark ? "text-white" : "text-black";
+    const monthColor = isDark ? "text-gray-400" : "text-gray-800"; // Slightly darker for visibility
+
     return (
     <TouchableOpacity 
         activeOpacity={0.7}
         className="mb-3"
         onPress={() => setSelectedExpense(item)}
     >
-        <StyledView className={`p-3 flex-row items-center gap-3 rounded-xl border ${isDark ? 'bg-dark-surface border-dark-border' : 'bg-surface border-border'}`}>
-            {/* DATE BOX */}
-            <StyledView className={`w-12 h-14 rounded-lg items-center justify-center border shrink-0 ${isDark ? 'bg-background/50 border-white/5' : 'bg-white border-border'}`}>
-                 <StyledText className={`text-[10px] uppercase font-bold ${isDark ? 'text-dark-muted' : 'text-muted'}`}>{month}</StyledText>
-                 <StyledText className={`text-lg font-bold ${isDark ? 'text-white' : 'text-main'}`}>{day}</StyledText>
+        <StyledView className={`p-4 flex-row items-center gap-4 rounded-2xl shadow-sm ${isDark ? 'bg-[#1a1a1a] border border-white/5' : 'bg-white border border-gray-100'}`}>
+            {/* DATE BOX - Premium Style */}
+            <StyledView className={`w-14 h-16 rounded-xl items-center justify-center shrink-0 ${isDark ? 'bg-[#252525]' : 'bg-gray-50'}`}>
+                 <StyledText className={`text-[10px] uppercase font-bold tracking-widest ${monthColor}`}>{month}</StyledText>
+                 <StyledText className={`text-2xl font-black ${dateNumColor}`}>{day}</StyledText>
             </StyledView>
 
-            <StyledView className="flex-1 min-w-0">
-                <StyledText className={`font-bold text-base font-sans truncate ${isDark ? 'text-white' : 'text-main'}`} numberOfLines={1}>
+            {/* CONTENT */}
+            <StyledView className="flex-1 min-w-0 justify-center">
+                <StyledText className={`font-bold text-[17px] font-sans truncate mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`} numberOfLines={1}>
                     {item.title}
                 </StyledText>
-                <StyledText className={`text-xs font-sans truncate ${isDark ? 'text-dark-muted' : 'text-muted'}`} numberOfLines={1}>
-                    <StyledText className={`font-medium ${isDark ? 'text-white' : 'text-main'}`}>{payer?.name || 'Unknown'}</StyledText> paid <StyledText className={`font-bold ${isDark ? 'text-white' : 'text-main'}`}>₹{Number(item.amount).toFixed(2)}</StyledText>
-                </StyledText>
+                
+                <StyledView className="flex-row items-center gap-1">
+                    <StyledText className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <StyledText className={`font-bold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{payer?.name?.split(' ')[0]}</StyledText> paid ₹{Number(item.amount).toFixed(2)}
+                    </StyledText>
+                </StyledView>
             </StyledView>
 
-            {/* STATUS */}
-            <StyledView className="items-end shrink-0 pl-2">
-                 <StyledText className={`text-[10px] font-bold uppercase ${statusColor}`}>{statusText}</StyledText>
+            {/* STATUS PILL */}
+            <StyledView className="items-end shrink-0 gap-1">
+                 <StyledView className={`px-2 py-1 rounded-md ${statusBg}`}>
+                     <StyledText className={`text-[10px] font-bold uppercase tracking-wide ${statusTextColor}`}>{statusText}</StyledText>
+                 </StyledView>
                  {statusAmount ? (
-                    <StyledText className={`font-bold ${statusColor}`}>{statusAmount}</StyledText>
+                    <StyledText className={`font-bold text-sm ${statusTextColor}`}>{statusAmount}</StyledText>
                  ) : null}
             </StyledView>
         </StyledView>
@@ -148,48 +166,24 @@ export default function GroupDetailsScreen() {
     );
   };
 
-  const renderHeader = () => (
-    <View className="mb-6">
-        {/* Header Bar */}
-        <StyledView className="flex-row items-center justify-between mb-6 pt-2">
-            <TouchableOpacity 
-                onPress={() => router.back()}
-                className={`w-10 h-10 rounded-full border items-center justify-center ${isDark ? 'bg-dark-surface border-dark-border' : 'bg-surface border-border'}`}
-            >
-                <Feather name="arrow-left" size={20} color={isDark ? "white" : "#0f172a"} />
-            </TouchableOpacity>
-            
-            <StyledText className={`text-xl font-bold font-sans truncate max-w-[200px] ${isDark ? 'text-white' : 'text-main'}`}>{name}</StyledText>
-            
-            <TouchableOpacity 
-                onPress={() => setShowGroupInfo(true)}
-                className={`w-10 h-10 rounded-full border items-center justify-center ${isDark ? 'bg-dark-surface border-dark-border' : 'bg-surface border-border'}`}
-            >
-                <Feather name="info" size={20} color={isDark ? "#888" : "#64748b"} />
-            </TouchableOpacity>
-        </StyledView>
+  const [settleModalVisible, setSettleModalVisible] = useState(false);
 
-        {/* Graph Section */}
-        {members.length > 0 && (
-            <StyledView className="mb-8">
-                <UserRelationshipGraph members={members} expenses={expenses} />
-            </StyledView>
-        )}
-
-        {/* Expenses Header */}
-        <StyledView className="flex-row items-center justify-between mb-4">
-            <StyledText className={`text-lg font-bold font-sans ${isDark ? 'text-white' : 'text-main'}`}>Expenses</StyledText>
-            <StyledView className={`px-3 py-1 rounded-full border ${isDark ? 'bg-dark-surface border-dark-border' : 'bg-surface border-border'}`}>
-                <StyledText className={`text-xs font-sans font-bold ${isDark ? 'text-dark-muted' : 'text-muted'}`}>Total: {expenses.length}</StyledText>
-            </StyledView>
-        </StyledView>
-    </View>
-  );
+  // Import locally to avoid top-level require cycle issues if any, though likely fine at top.
+  // Actually, I need to add the import at top. I'll rely on the existing imports logic or add it via a separate tool if needed?
+  // Wait, I can't add imports with replace_content in valid way if I only replace return.
+  // I need to update imports too.
+  // I'll assume I can edit the whole file or huge chunks.
+  // Let me edit the return + imports in one go by targeting a larger range or doing it in two steps.
+  // I'll start the replacement from line 11 (imports) downwards or use multi_replace.
+  
+  // Actually, I'll just replace the return block and helper.
+  // I'll add the SettleUpModal import and usage in a second pass or check if I can do it here.
+  // I'll use multi_replace to handle imports + body.
 
   return (
     <ScreenWrapper>
         <FlatList 
-            data={expenses}
+            data={filteredExpenses}
             keyExtractor={item => item.id}
             renderItem={renderExpense}
             ListHeaderComponent={renderHeader}
@@ -198,26 +192,30 @@ export default function GroupDetailsScreen() {
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
                 !loading ? (
-                    <StyledView className="items-center justify-center py-10 opacity-50">
-                        <Feather name="dollar-sign" size={40} color={isDark ? "#444" : "#cbd5e1"} />
-                        <StyledText className={`text-center mt-4 font-sans ${isDark ? 'text-gray-400' : 'text-muted'}`}>No expenses yet.</StyledText>
-                        <StyledText className={`text-center mt-1 text-sm font-sans ${isDark ? 'text-gray-600' : 'text-muted'}`}>Add one to start splitting!</StyledText>
+                    <StyledView className="items-center justify-center py-20 opacity-60">
+                         <StyledView className={`w-20 h-20 rounded-full items-center justify-center mb-4 ${isDark ? 'bg-white/5' : 'bg-black/5'}`}>
+                            <Feather name="list" size={32} color={isDark ? "#666" : "#999"} />
+                         </StyledView>
+                        <StyledText className={`text-center font-bold text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>No activity yet</StyledText>
+                        <StyledText className={`text-center mt-1 text-sm ${isDark ? 'text-gray-600' : 'text-gray-500'}`}>Expenses or payments will appear here.</StyledText>
                     </StyledView>
                 ) : null
             }
         />
 
-        {/* FAB */}
-        <TouchableOpacity 
-            onPress={() => router.push({ 
-                pathname: '/add-expense', 
-                params: { groupId: id, members: JSON.stringify(members) } 
-            })}
-            activeOpacity={0.8}
-            className="absolute bottom-8 right-6 w-14 h-14 bg-primary rounded-full items-center justify-center shadow-lg shadow-black/50"
-        >
-            <Feather name="plus" size={28} color="#151515" />
-        </TouchableOpacity>
+        {/* Floating Add Button (Secondary quick action) */}
+        {!settleModalVisible && (
+            <TouchableOpacity 
+                onPress={() => router.push({ 
+                    pathname: '/add-expense', 
+                    params: { groupId: id, members: JSON.stringify(members) } 
+                })}
+                activeOpacity={0.8}
+                className="absolute bottom-8 right-6 w-14 h-14 bg-primary rounded-full items-center justify-center shadow-lg shadow-black/50 z-20"
+            >
+                <Feather name="plus" size={28} color="#151515" />
+            </TouchableOpacity>
+        )}
 
         <ExpenseModal 
             visible={!!selectedExpense} 
@@ -233,6 +231,14 @@ export default function GroupDetailsScreen() {
             groupId={id}
             members={members}
             onUpdate={fetchData}
+        />
+
+        <SettleUpModal 
+             visible={settleModalVisible}
+             onClose={() => setSettleModalVisible(false)}
+             onSuccess={fetchData}
+             groupId={id}
+             members={members}
         />
     </ScreenWrapper>
   );
