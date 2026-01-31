@@ -168,17 +168,119 @@ export default function GroupDetailsScreen() {
 
   const [settleModalVisible, setSettleModalVisible] = useState(false);
 
-  // Import locally to avoid top-level require cycle issues if any, though likely fine at top.
-  // Actually, I need to add the import at top. I'll rely on the existing imports logic or add it via a separate tool if needed?
-  // Wait, I can't add imports with replace_content in valid way if I only replace return.
-  // I need to update imports too.
-  // I'll assume I can edit the whole file or huge chunks.
-  // Let me edit the return + imports in one go by targeting a larger range or doing it in two steps.
-  // I'll start the replacement from line 11 (imports) downwards or use multi_replace.
+  // --- Filtering Logic ---
+  const [selectedMonth, setSelectedMonth] = useState("ALL");
   
-  // Actually, I'll just replace the return block and helper.
-  // I'll add the SettleUpModal import and usage in a second pass or check if I can do it here.
-  // I'll use multi_replace to handle imports + body.
+  const filteredExpenses = selectedMonth === "ALL" 
+      ? expenses 
+      : expenses.filter(e => {
+          const d = new Date(e.created_at);
+          const mStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          return mStr === selectedMonth;
+      });
+
+  const availableMonths = Array.from(new Set(expenses.map(e => {
+      const d = new Date(e.created_at);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }))).sort().reverse();
+
+
+  const renderHeader = () => (
+    <View className="mb-6">
+        {/* Header Bar */}
+        <StyledView className="flex-row items-center justify-between mb-6 pt-2">
+            <TouchableOpacity 
+                onPress={() => router.back()}
+                className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-white/10' : 'bg-black/5'}`}
+            >
+                <Feather name="arrow-left" size={24} color={isDark ? "white" : "#0f172a"} />
+            </TouchableOpacity>
+            
+            <StyledText className={`text-lg font-bold font-sans truncate max-w-[200px] ${isDark ? 'text-white' : 'text-main'}`}>{name}</StyledText>
+            
+            <TouchableOpacity 
+                onPress={() => setShowGroupInfo(true)}
+                className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-white/10' : 'bg-black/5'}`}
+            >
+                <Feather name="settings" size={20} color={isDark ? "white" : "#0f172a"} />
+            </TouchableOpacity>
+        </StyledView>
+
+        {/* ACTION BUTTONS (Settle Up Added) */}
+        <StyledView className="flex-row gap-3 mb-8">
+            <TouchableOpacity 
+                onPress={() => setSettleModalVisible(true)}
+                className={`flex-1 flex-row items-center justify-center gap-2 py-3 rounded-xl border ${isDark ? 'bg-[#1a1a1a] border-white/10' : 'bg-white border-gray-200'}`}
+                activeOpacity={0.7}
+            >
+                    <Feather name="check-circle" size={18} color={isDark ? "#4ade80" : "#16a34a"} />
+                    <StyledText className={`font-bold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>Settle Up</StyledText>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+                onPress={() => router.push({ 
+                    pathname: '/add-expense', 
+                    params: { groupId: id, members: JSON.stringify(members) } 
+                })}
+                className="flex-1 flex-row items-center justify-center gap-2 py-3 rounded-xl bg-primary shadow-lg shadow-primary/30"
+                activeOpacity={0.7}
+            >
+                    <Feather name="plus-circle" size={18} color="#151515" />
+                    <StyledText className="font-bold text-[#151515]">Add Expense</StyledText>
+            </TouchableOpacity>
+        </StyledView>
+
+        {/* Graph Section */}
+        {members.length > 0 && (
+            <StyledView className="mb-8">
+                <UserRelationshipGraph members={members} expenses={expenses} />
+            </StyledView>
+        )}
+
+        {/* Expenses Header & Filter */}
+        <StyledView className="mb-4">
+             <StyledView className="flex-row items-center justify-between mb-3 px-1">
+                <StyledText className={`text-xl font-bold font-sans ${isDark ? 'text-white' : 'text-gray-900'}`}>Transactions</StyledText>
+                {filteredExpenses.length > 0 && (
+                        <StyledText className={`text-xs font-bold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{filteredExpenses.length} VISIBLE</StyledText>
+                )}
+            </StyledView>
+
+            {/* Horizontal Month Selector */}
+            <FlatList 
+                horizontal
+                data={["ALL", ...availableMonths]}
+                keyExtractor={item => item}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8 }}
+                renderItem={({ item }) => {
+                    const isSelected = selectedMonth === item;
+                    let label = "All Time";
+                    if (item !== "ALL") {
+                        const [y, m] = item.split('-');
+                        const date = new Date(parseInt(y), parseInt(m) - 1);
+                        label = date.toLocaleString('default', { month: 'short', year: '2-digit' });
+                    }
+
+                    return (
+                        <TouchableOpacity 
+                            onPress={() => setSelectedMonth(item)}
+                            className={`px-4 py-2 rounded-full border ${
+                                isSelected 
+                                    ? 'bg-primary border-primary' 
+                                    : isDark ? 'bg-white/5 border-white/10' : 'bg-gray-100 border-gray-200'
+                            }`}
+                        >
+                            <StyledText className={`text-xs font-bold ${isSelected ? 'text-[#151515]' : isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                {label}
+                            </StyledText>
+                        </TouchableOpacity>
+                    )
+                }}
+            />
+        </StyledView>
+    </View>
+  );
 
   return (
     <ScreenWrapper>

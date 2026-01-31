@@ -4,7 +4,7 @@
     "slug": "splibiz",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/app_icons/icon.png",
+    "icon": "./assets/app_icons/icon_square.png",
     "scheme": "splibiz",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -15,9 +15,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#121212",
-        "foregroundImage": "./assets/app_icons/icon.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/app_icons/icon_square.png"
       },
       "package": "com.splibiz.mobile",
       "edgeToEdgeEnabled": true,
