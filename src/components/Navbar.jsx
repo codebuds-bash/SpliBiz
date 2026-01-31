@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Icons } from "./UIComponents";
 import NotificationBell from "./NotificationBell";
 import { useAuth } from "../contexts/AuthContext";
+import { isAdmin } from "../utils/admins";
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
@@ -68,10 +69,15 @@ export default function Navbar() {
               </Link>
               <Link to="/profile" className="flex items-center gap-2 text-[var(--text-muted)] hover:text-white transition-colors">
                 {getAvatar()}
-              </Link>
-              <button onClick={logout} className="btn-secondary py-1.5 px-3 text-sm">
+              </Link>            
+            {user && isAdmin(user.email) && (
+                <Link to="/admin-dashboard" className="text-amber-400 hover:text-amber-300 font-bold tracking-wider transition-colors ml-2 border border-amber-500/30 px-3 py-1 rounded-full bg-amber-500/10 text-xs uppercase" title="Creator Mode">
+                  GOD MODE
+                </Link>
+            )}
+            <button onClick={logout} className="btn-secondary py-1.5 px-3 text-sm">
                 Sign out
-              </button>
+            </button>
             </>
           )}
         </div>

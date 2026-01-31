@@ -12,6 +12,8 @@ import Profile from "./pages/Profile";
 import CompleteProfile from "./pages/CompleteProfile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AuthCallback from "./pages/AuthCallback";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminRoute from "./components/AdminRoute";
 
 export default function App() {
   return (
@@ -67,6 +69,22 @@ export default function App() {
             <ProtectedRoute>
               <Profile />
             </ProtectedRoute>
+          }
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin-dashboard"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
           }
         />
 
