@@ -6,22 +6,34 @@ import { FiLock, FiCpu } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 
 export default function AdminLogin() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { addToast } = useToast();
 
-  async function handleLogin() {
+  async function handleLogin(e) {
+    e.preventDefault();
     setLoading(true);
-    // We set the redirect to go back to admin dashboard
-    const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-        redirectTo: `${window.location.origin}/auth/callback?redirect_to=/admin-dashboard`,
-        },
-    });
 
-    if (error) {
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (error) throw error;
+
+        // Check if admin
+        // We import isAdmin from utils, but we can also just check against the list on the fly if needed.
+        // But the AdminRoute will do the heavy lifting of protecting the route.
+        // Here we just redirect.
+        
+        navigate("/admin-dashboard");
+        
+    } catch (error) {
         addToast(error.message, "error");
+    } finally {
         setLoading(false);
     }
   }
@@ -48,23 +60,43 @@ export default function AdminLogin() {
                 <span className="text-green-500">SYSTEM</span> ACCESS
             </h1>
             <p className="text-center text-gray-500 text-xs mb-8 uppercase tracking-widest">
-                Restricted Area. Authorized Personnel Only.
+                Enter Credentials
             </p>
 
-            <button
-                onClick={handleLogin}
-                disabled={loading}
-                className="w-full group relative flex items-center justify-center gap-3 bg-white text-black font-bold py-4 px-6 rounded-lg hover:bg-gray-200 transition-all active:scale-95 disabled:opacity-50"
-            >
-                {loading ? (
-                   <FiCpu className="animate-spin text-xl" />
-                ) : (
-                    <>
-                        <FcGoogle className="text-2xl" />
-                        <span>AUTHENTICATE WITH GOOGLE</span>
-                    </>
-                )}
-            </button>
+            <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                   <label className="text-xs text-green-500 mb-1 block uppercase">Admin Email</label>
+                   <input 
+                        type="email" 
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full bg-black border border-green-500/30 rounded p-3 text-white focus:outline-none focus:border-green-500 transition-colors placeholder-gray-700"
+                        placeholder="admin@splibiz.com"
+                   />
+                </div>
+                <div>
+                   <label className="text-xs text-green-500 mb-1 block uppercase">Passphrase</label>
+                   <input 
+                        type="password" 
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full bg-black border border-green-500/30 rounded p-3 text-white focus:outline-none focus:border-green-500 transition-colors placeholder-gray-700"
+                        placeholder="••••••••"
+                   />
+                </div>
+
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full group relative flex items-center justify-center gap-3 bg-green-600 text-black font-bold py-4 px-6 rounded-lg hover:bg-green-500 transition-all active:scale-95 disabled:opacity-50 mt-6"
+                >
+                    {loading ? (
+                    <FiCpu className="animate-spin text-xl" />
+                    ) : (
+                        <span>AUTHENTICATE</span>
+                    )}
+                </button>
+            </form>
 
             <div className="mt-8 text-center">
                 <button onClick={() => navigate('/')} className="text-xs text-gray-600 hover:text-green-500 transition-colors">
