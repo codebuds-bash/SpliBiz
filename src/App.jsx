@@ -13,6 +13,7 @@ import CompleteProfile from "./pages/CompleteProfile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AuthCallback from "./pages/AuthCallback";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminLogin from "./pages/AdminLogin";
 import AdminRoute from "./components/AdminRoute";
 
 export default function App() {
@@ -87,6 +88,8 @@ export default function App() {
             </AdminRoute>
           }
         />
+        
+        <Route path="/admin-login" element={<AdminLogin />} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

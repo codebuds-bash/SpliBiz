@@ -11,7 +11,8 @@ export default function AdminRoute({ children }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // If trying to access admin route but not logged in, go to admin login
+    return <Navigate to="/admin-login" state={{ from: location }} replace />;
   }
 
   if (!isAdmin(user.email)) {
