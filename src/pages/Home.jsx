@@ -3,6 +3,7 @@ import Footer from "../components/Footer";
 import { Link } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { FiZap, FiRefreshCw, FiShield, FiUsers, FiDollarSign, FiActivity } from "react-icons/fi";
+import { FaAndroid, FaApple } from "react-icons/fa";
 
 export default function Home() {
   const [visibleFeatures, setVisibleFeatures] = useState(new Set());
@@ -77,6 +78,30 @@ export default function Home() {
                 >
                 Learn More
                 </a>
+            </div>
+
+            <div className="mt-12 flex flex-col items-center gap-4 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+              <p className="text-sm text-gray-500 font-medium uppercase tracking-widest">Available on Mobile</p>
+              <div className="flex flex-wrap justify-center gap-4">
+                <a
+                  href="https://expo.dev/artifacts/eas/m36hXozx982mPfmW4z4guB.apk"
+                  className="flex items-center gap-3 px-6 py-3 rounded-xl bg-[#3DDC84]/10 border border-[#3DDC84]/20 text-[#3DDC84] hover:bg-[#3DDC84]/20 transition-all hover:scale-105 active:scale-95 group"
+                >
+                  <FaAndroid className="text-2xl group-hover:drop-shadow-[0_0_8px_rgba(61,220,132,0.5)] transition-all" />
+                  <div className="text-left">
+                    <div className="text-[10px] opacity-80 uppercase tracking-wider font-bold">Download APK</div>
+                    <div className="font-bold text-lg leading-none">Android</div>
+                  </div>
+                </a>
+
+                <div className="flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-gray-500 cursor-not-allowed">
+                  <FaApple className="text-2xl" />
+                  <div className="text-left">
+                    <div className="text-[10px] opacity-80 uppercase tracking-wider font-bold">Coming Soon</div>
+                    <div className="font-bold text-lg leading-none">iOS</div>
+                  </div>
+                </div>
+              </div>
             </div>
         </div>
       </section>
